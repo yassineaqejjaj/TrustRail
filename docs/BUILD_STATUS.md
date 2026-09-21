@@ -23,7 +23,7 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 | V07 | Transactional shared budgets and idempotency | done | Multi-target atomic reservation (root + child + policy-level daily budget), deterministic lock ordering, real Postgres row locks. Idempotency scoped to org+actor+key with payload-hash conflict detection. Concurrency-tested (exactly 3/6 and merchant-sandbox's own 3/8 concurrent-overrefund tests). |
 | V08 | Signed decision and execution receipts | done | Ed25519 JWS via `jose`, RFC 8785 canonicalization (hand-rolled, see Decisions), explicit alg/typ allowlist, kid-based key lookup, tamper/unknown-issuer/rotation all unit- and integration-tested. |
 | V09 | Dashboard and action detail | todo | No frontend yet. API supports everything the dashboard needs (actions list/detail, approvals, receipts, metrics). |
-| V10 | Deterministic demo lab | partial | Fixture data (`packages/contracts/src/demoFixtures.ts`) and merchant-sandbox seeding exist and are used by tests. No `POST /v1/demo/runs` endpoint, no `pnpm demo:seed`/`demo:run`/`demo:reset` scripts, no Demo Lab UI yet. |
+| V10 | Deterministic demo lab | done | All 12 scenarios from spec section 14 implemented (`apps/api/src/demo/scenarios.ts`) calling the real gateway functions, verified passing twice from a clean `pnpm demo:reset` via `pnpm demo:run <scenario>`. `POST/GET /v1/demo/runs`, `POST /v1/demo/reset` (403 outside local/demo mode) wired. No Demo Lab UI yet (frontend in progress). |
 | V11 | TypeScript and Python SDKs | todo | Not started. |
 | V12 | MCP tool adapter | todo | Not started. |
 | V13 | Developer docs and local setup | partial | `docs/PRODUCT_SPEC.md`, `DECISIONS.md`, this file exist. `pnpm setup:local`/`dev`/`migrate` scripts not yet written — migrations currently run via each app's own `pnpm --filter run migrate` after manual role bootstrap. README/API/SDK/MCP/OPERATIONS docs not yet written. |
@@ -34,8 +34,8 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 
 | Phase | Gate | Status |
 |---|---|---|
-| 1. Foundation | Clean setup, login, org isolation, merchant idempotency tests pass | **met** for login/org isolation/merchant idempotency (23 passing tests across apps/api and apps/merchant-sandbox). `pnpm setup:local`/`clean checkout` scripted path not yet written — currently requires manual steps (see below). |
-| 2. Real protected action | Allowed/denied/concurrent/ambiguous-outcome integration tests pass | **met** for allowed/denied/concurrent. Ambiguous-outcome (connector timeout -> `unknown` -> reconciled) is implemented (`src/gateway/dispatch.ts`, `src/worker/poller.ts`) but not yet covered by a test that forces a real timeout. |
+| 1. Foundation | Clean setup, login, org isolation, merchant idempotency tests pass | **met**. `pnpm setup:local` + `pnpm dev` run for real (verified manually with curl end to end: register, create org, agent, credential, grant, refund). 23 passing tests across apps/api and apps/merchant-sandbox. |
+| 2. Real protected action | Allowed/denied/concurrent/ambiguous-outcome integration tests pass | **met**. Ambiguous-outcome (connector timeout -> `unknown` -> reconciled) is exercised by the `connector_timeout_reconciled` demo scenario (deterministic fault injection, `apps/api/src/demo/faultInjectingConnector.ts`) and passes; not yet additionally covered by a vitest integration test (the demo scenario run *is* the verification so far). |
 | 3. Review and evidence | Reviewer completes EUR 350 workflow; altered receipt fails; replay cannot duplicate execution | **met** — all three covered by `gateway.integration.test.ts`. |
 | 4. Product interface | Required browser flows work with real persistent data, including failure states | todo — no frontend exists yet. |
 | 5. Developer adoption | Both SDKs + MCP adapter work without private knowledge | todo. |
