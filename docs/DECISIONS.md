@@ -98,6 +98,20 @@ containers, and a receipt signed inside the `api` container verified
 independently (`signature_valid: true`, `issuer_trusted: true`).
 `merchant-sandbox`'s "no published port" isolation was also confirmed for
 real, not just by review: a direct connection attempt from the host is
-refused outright. `.github/workflows/ci.yml` remains unexecuted -- no
-GitHub Actions runner access from this machine -- and is the one
-deployment-package piece still genuinely unverified.
+refused outright.
+
+## 2026-09-21 — Pushed to GitHub; CI run for real; one more bug found
+
+Created `yassineaqejjaj/trustrail` (private) and pushed `main`, which gave
+`.github/workflows/ci.yml` its first real execution on an actual GitHub
+Actions runner. It failed immediately, on `pnpm/action-setup@v4`: the
+workflow passed `version: 9` while `package.json`'s own `packageManager`
+field already pins `pnpm@9.15.0`, and a newer release of that action now
+treats specifying a version in both places as an error (`ERR_PNPM_BAD_PM_VERSION`
+guard), even when the versions don't actually conflict. Fixed by dropping
+the redundant `version:` input and letting the action read
+`packageManager` instead, which is also more correct going forward (only
+one source of truth for the pinned version). Re-ran after the fix -- see
+`docs/TEST_REPORT.md`/`docs/BUILD_STATUS.md` for the result. This was the
+one deployment-package piece that had remained genuinely unverified; it no
+longer is.

@@ -1,7 +1,5 @@
-# NOT executed on the machine this repo was built on (no CI runner access
-# there). Reviewed against the actual commands used throughout this build
-# (docs/TEST_REPORT.md) but not confirmed green on an actual GitHub Actions
-# run -- see docs/BUILD_STATUS.md.
+# Actually run on GitHub Actions on 2026-09-21 -- see docs/BUILD_STATUS.md's
+# V15 entry and docs/DECISIONS.md for what that first run found and fixed.
 name: CI
 
 on:
@@ -15,9 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` input here -- package.json's own "packageManager"
+      # field already pins pnpm@9.15.0, and pnpm/action-setup@v4 now
+      # refuses to run if both specify a version (even the same one).
+      # Found by actually running this workflow for the first time.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
