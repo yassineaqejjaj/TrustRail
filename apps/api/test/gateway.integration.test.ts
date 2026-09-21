@@ -409,3 +409,25 @@ describe("enforcement boundary: direct merchant access", () => {
     expect(res.statusCode).toBe(401);
   });
 });
+
+describe("read-only order lookup through the gateway", () => {
+  it("lets an authenticated agent read order facts without ever touching the merchant directly", async () => {
+    const { cookie, organizationId } = await registerAndCreateOrg("readonly-owner@example.com", "Readonly Co");
+    await h.seedMerchantOrders(organizationId);
+    const agentId = await createAgent(cookie, organizationId, "Agent");
+    const agentSecret = await createCredential(cookie, organizationId, agentId);
+
+    const res = await h.app.inject({ method: "GET", url: "/v1/connectors/merchant_sandbox/resources/order_demo_101", headers: { authorization: `Bearer ${agentSecret}` } });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().remaining_amount_minor).toBe(20_000);
+    expect(res.json().currency).toBe("EUR");
+  });
+
+  it("404s for an unknown resource id", async () => {
+    const { cookie, organizationId } = await registerAndCreateOrg("readonly-owner-2@example.com", "Readonly Co 2");
+    const agentId = await createAgent(cookie, organizationId, "Agent");
+    const agentSecret = await createCredential(cookie, organizationId, agentId);
+    const res = await h.app.inject({ method: "GET", url: "/v1/connectors/merchant_sandbox/resources/order_does_not_exist", headers: { authorization: `Bearer ${agentSecret}` } });
+    expect(res.statusCode).toBe(404);
+  });
+});

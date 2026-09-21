@@ -46,6 +46,36 @@ export function registerActionRoutes(app: FastifyInstance, db: Db, deps: SubmitA
     })
   );
 
+  /**
+   * "Read-only product views fetch merchant state through authorized
+   * backend routes" (spec section 4). The gateway still owns the
+   * connector credential -- an agent never talks to the merchant sandbox
+   * directly, even for a read. Used by the MCP adapter's `get_order` tool
+   * and by any agent that needs order facts before deciding what to
+   * request.
+   */
+  app.get(
+    "/v1/connectors/:connectorId/resources/:resourceId",
+    agentRoute(db, async (ctx, req, reply) => {
+      const params = z.object({ connectorId: z.string(), resourceId: z.string() }).safeParse(req.params);
+      if (!params.success) return sendApiError(reply, req, new ApiError(400, "BAD_REQUEST", "invalid request"));
+      if (params.data.connectorId !== deps.connector.connectorId) {
+        return sendApiError(reply, req, new ApiError(404, "NOT_FOUND", "unknown connector"));
+      }
+      const order = await deps.connector.lookupOrder({ organizationId: ctx.organizationId, resourceId: params.data.resourceId });
+      if (!order.found) {
+        return sendApiError(reply, req, new ApiError(404, "NOT_FOUND", "resource not found"));
+      }
+      return {
+        resource_id: params.data.resourceId,
+        remaining_amount_minor: order.remainingAmountMinor,
+        currency: order.currency,
+        age_days: order.ageDays,
+        disputed: order.disputed,
+      };
+    })
+  );
+
   app.get(
     "/v1/actions",
     userRoute(db, async (ctx, req, reply) => {
