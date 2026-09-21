@@ -53,16 +53,22 @@ export interface RequestOptions {
 }
 
 export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const method = opts.method ?? "GET";
   const headers: Record<string, string> = { Accept: "application/json", ...opts.headers };
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (opts.orgId) headers["X-Organization-Id"] = opts.orgId;
   if (opts.idempotencyKey) headers["Idempotency-Key"] = opts.idempotencyKey;
   if (opts.bearerToken) headers["Authorization"] = `Bearer ${opts.bearerToken}`;
+  // Required by the API's CSRF check for any cookie-authenticated mutating
+  // request (see apps/api/src/server.ts) -- a plain cross-site form
+  // submission can't set a custom header, so this rules out that one case
+  // strict CORS doesn't already cover. Harmless to send on every request.
+  if (method !== "GET" && !opts.bearerToken) headers["X-TrustRail-CSRF"] = "1";
 
   let res: Response;
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
-      method: opts.method ?? "GET",
+      method,
       credentials: "include",
       headers,
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,

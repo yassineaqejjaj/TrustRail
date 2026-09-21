@@ -32,7 +32,7 @@ export async function seedOrgWithGrant(state: E2eState, emailPrefix: string): Pr
 
   const orgRes = await fetch(`${state.apiBaseUrl}/v1/organizations`, {
     method: "POST",
-    headers: { "content-type": "application/json", cookie },
+    headers: { "x-trustrail-csrf": "1", "content-type": "application/json", cookie  },
     body: JSON.stringify({ name: `${emailPrefix} Org` }),
   });
   const { organization_id: organizationId } = await orgRes.json();
@@ -44,20 +44,20 @@ export async function seedOrgWithGrant(state: E2eState, emailPrefix: string): Pr
 
   const agentRes = await fetch(`${state.apiBaseUrl}/v1/agents`, {
     method: "POST",
-    headers: { "content-type": "application/json", cookie, "x-organization-id": organizationId },
+    headers: { "x-trustrail-csrf": "1", "content-type": "application/json", cookie, "x-organization-id": organizationId  },
     body: JSON.stringify({ name: "E2E Agent", description: "", environment: "sandbox" }),
   });
   const { agent_id: agentId } = await agentRes.json();
 
   const credRes = await fetch(`${state.apiBaseUrl}/v1/agents/${agentId}/credentials`, {
     method: "POST",
-    headers: { cookie, "x-organization-id": organizationId },
+    headers: { "x-trustrail-csrf": "1", cookie, "x-organization-id": organizationId  },
   });
   const { secret: agentSecret } = await credRes.json();
 
   const grantRes = await fetch(`${state.apiBaseUrl}/v1/grants`, {
     method: "POST",
-    headers: { "content-type": "application/json", cookie, "x-organization-id": organizationId },
+    headers: { "x-trustrail-csrf": "1", "content-type": "application/json", cookie, "x-organization-id": organizationId  },
     body: JSON.stringify({
       environment: "sandbox",
       principal_id: userId,
@@ -93,7 +93,7 @@ export async function addApprover(state: E2eState, org: SeededOrg, emailPrefix: 
   });
   await fetch(`${state.apiBaseUrl}/v1/memberships`, {
     method: "POST",
-    headers: { "content-type": "application/json", cookie: org.ownerCookie, "x-organization-id": org.organizationId },
+    headers: { "x-trustrail-csrf": "1", "content-type": "application/json", cookie: org.ownerCookie, "x-organization-id": org.organizationId  },
     body: JSON.stringify({ email, role: "approver" }),
   });
   return { email, password };

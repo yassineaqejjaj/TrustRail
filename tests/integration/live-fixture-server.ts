@@ -76,16 +76,16 @@ async function main() {
   const register = await fetch(`${apiBaseUrl}/v1/auth/register`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "py-live@example.com", password: "correct horse battery staple" }) });
   const cookie = register.headers.get("set-cookie")!.split(";")[0]!;
   const { user_id: userId } = await register.json();
-  const orgRes = await fetch(`${apiBaseUrl}/v1/organizations`, { method: "POST", headers: { "content-type": "application/json", cookie }, body: JSON.stringify({ name: "Python SDK Live Test" }) });
+  const orgRes = await fetch(`${apiBaseUrl}/v1/organizations`, { method: "POST", headers: { "x-trustrail-csrf": "1", "content-type": "application/json", cookie  }, body: JSON.stringify({ name: "Python SDK Live Test" }) });
   const { organization_id: organizationId } = await orgRes.json();
   await seedMerchantSandbox(merchantDb, organizationId);
-  const agentRes = await fetch(`${apiBaseUrl}/v1/agents`, { method: "POST", headers: { "content-type": "application/json", cookie, "x-organization-id": organizationId }, body: JSON.stringify({ name: "Python SDK Agent", description: "", environment: "sandbox" }) });
+  const agentRes = await fetch(`${apiBaseUrl}/v1/agents`, { method: "POST", headers: { "x-trustrail-csrf": "1", "content-type": "application/json", cookie, "x-organization-id": organizationId  }, body: JSON.stringify({ name: "Python SDK Agent", description: "", environment: "sandbox" }) });
   const { agent_id: agentId } = await agentRes.json();
-  const credRes = await fetch(`${apiBaseUrl}/v1/agents/${agentId}/credentials`, { method: "POST", headers: { cookie, "x-organization-id": organizationId } });
+  const credRes = await fetch(`${apiBaseUrl}/v1/agents/${agentId}/credentials`, { method: "POST", headers: { "x-trustrail-csrf": "1", cookie, "x-organization-id": organizationId  } });
   const { secret } = await credRes.json();
   const grantRes = await fetch(`${apiBaseUrl}/v1/grants`, {
     method: "POST",
-    headers: { "content-type": "application/json", cookie, "x-organization-id": organizationId },
+    headers: { "x-trustrail-csrf": "1", "content-type": "application/json", cookie, "x-organization-id": organizationId  },
     body: JSON.stringify({
       environment: "sandbox", principal_id: userId, subject_agent_id: agentId, parent_grant_id: null,
       allowed_actions: ["refund.create"], allowed_resource_ids: [], unrestricted_resources: true,

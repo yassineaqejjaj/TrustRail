@@ -72,8 +72,17 @@ export async function authenticateAgent(db: Db, req: FastifyRequest): Promise<Ag
     throw new AuthError(401, "CREDENTIAL_REVOKED", "credential has expired");
   }
 
-  const agentRows = await withTenant(db, cred.organizationId, (tx) => tx.select().from(agents).where(eq(agents.id, cred.agentId)).limit(1));
-  const agent = agentRows[0];
+  const agent = await withTenant(db, cred.organizationId, async (tx) => {
+    const rows = await tx.select().from(agents).where(eq(agents.id, cred.agentId)).limit(1);
+    const row = rows[0];
+    if (row && row.status === "active") {
+      // Best-effort activity tracking, shown on the Agents page. Not
+      // awaited-critical: if this update fails for some reason, it should
+      // never block authentication.
+      await tx.update(agents).set({ lastActivityAt: new Date() }).where(eq(agents.id, row.id));
+    }
+    return row;
+  });
   if (!agent || agent.status !== "active") {
     throw new AuthError(401, "CREDENTIAL_REVOKED", "agent is not active");
   }

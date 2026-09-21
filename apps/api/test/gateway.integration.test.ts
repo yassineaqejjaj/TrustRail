@@ -22,7 +22,7 @@ async function registerAndCreateOrg(email: string, orgName: string) {
   const reg = await h.app.inject({ method: "POST", url: "/v1/auth/register", payload: { email, password: "correct horse battery staple" } });
   expect(reg.statusCode).toBe(201);
   const cookie = extractCookie(reg);
-  const orgRes = await h.app.inject({ method: "POST", url: "/v1/organizations", headers: { cookie }, payload: { name: orgName } });
+  const orgRes = await h.app.inject({ method: "POST", url: "/v1/organizations", headers: { cookie, "x-trustrail-csrf": "1" }, payload: { name: orgName } });
   expect(orgRes.statusCode).toBe(201);
   const organizationId = orgRes.json().organization_id as string;
   await h.seedMerchantOrders(organizationId);
@@ -30,13 +30,13 @@ async function registerAndCreateOrg(email: string, orgName: string) {
 }
 
 async function createAgent(cookie: string, organizationId: string, name: string) {
-  const res = await h.app.inject({ method: "POST", url: "/v1/agents", headers: { cookie, "x-organization-id": organizationId }, payload: { name, description: "", environment: "sandbox" } });
+  const res = await h.app.inject({ method: "POST", url: "/v1/agents", headers: { cookie, "x-trustrail-csrf": "1", "x-organization-id": organizationId }, payload: { name, description: "", environment: "sandbox" } });
   expect(res.statusCode).toBe(201);
   return res.json().agent_id as string;
 }
 
 async function createCredential(cookie: string, organizationId: string, agentId: string) {
-  const res = await h.app.inject({ method: "POST", url: `/v1/agents/${agentId}/credentials`, headers: { cookie, "x-organization-id": organizationId } });
+  const res = await h.app.inject({ method: "POST", url: `/v1/agents/${agentId}/credentials`, headers: { cookie, "x-trustrail-csrf": "1", "x-organization-id": organizationId } });
   expect(res.statusCode).toBe(201);
   return res.json().secret as string;
 }
@@ -45,7 +45,7 @@ async function createRootGrant(cookie: string, organizationId: string, principal
   const res = await h.app.inject({
     method: "POST",
     url: "/v1/grants",
-    headers: { cookie, "x-organization-id": organizationId },
+    headers: { cookie, "x-trustrail-csrf": "1", "x-organization-id": organizationId },
     payload: {
       environment: "sandbox",
       principal_id: principalId,
@@ -185,19 +185,19 @@ describe("the trusted execution path: allow, deny, and approval", () => {
     const actionId = submit.json().action_id;
 
     // A reviewer who IS the actor's own owner/principal cannot approve their own initiated action.
-    const selfApprove = await h.app.inject({ method: "POST", url: `/v1/approvals/${submit.json().approval.approval_id}/approve`, headers: { cookie, "x-organization-id": organizationId }, payload: {} });
+    const selfApprove = await h.app.inject({ method: "POST", url: `/v1/approvals/${submit.json().approval.approval_id}/approve`, headers: { cookie, "x-trustrail-csrf": "1", "x-organization-id": organizationId }, payload: {} });
     expect(selfApprove.statusCode).toBe(403);
 
     // An independent reviewer is added and approves.
     const reviewerReg = await h.app.inject({ method: "POST", url: "/v1/auth/register", payload: { email: "reviewer@example.com", password: "another strong password 123" } });
     const reviewerCookie = extractCookie(reviewerReg);
-    const addMember = await h.app.inject({ method: "POST", url: "/v1/memberships", headers: { cookie, "x-organization-id": organizationId }, payload: { email: "reviewer@example.com", role: "approver" } });
+    const addMember = await h.app.inject({ method: "POST", url: "/v1/memberships", headers: { cookie, "x-trustrail-csrf": "1", "x-organization-id": organizationId }, payload: { email: "reviewer@example.com", role: "approver" } });
     expect(addMember.statusCode).toBe(201);
 
     const approve = await h.app.inject({
       method: "POST",
       url: `/v1/approvals/${submit.json().approval.approval_id}/approve`,
-      headers: { cookie: reviewerCookie, "x-organization-id": organizationId },
+      headers: { "x-trustrail-csrf": "1", cookie: reviewerCookie, "x-organization-id": organizationId },
       payload: { reason: "confirmed with customer" },
     });
     expect(approve.statusCode).toBe(200);
@@ -238,7 +238,7 @@ describe("idempotency and grant revocation", () => {
   });
 
   it("blocks dispatch once the root grant is revoked, even though the request looks identical", async () => {
-    await h.app.inject({ method: "POST", url: `/v1/grants/${grantId}/revoke`, headers: { cookie, "x-organization-id": organizationId }, payload: { reason: "compromised" } });
+    await h.app.inject({ method: "POST", url: `/v1/grants/${grantId}/revoke`, headers: { cookie, "x-trustrail-csrf": "1", "x-organization-id": organizationId }, payload: { reason: "compromised" } });
     const res = await h.app.inject({
       method: "POST",
       url: "/v1/actions",
@@ -252,7 +252,7 @@ describe("idempotency and grant revocation", () => {
   it("rejects a credential after it is revoked", async () => {
     const listRes = await h.app.inject({ method: "GET", url: `/v1/agents/${agentId}`, headers: { cookie, "x-organization-id": organizationId } });
     const credentialId = listRes.json().credentials[0].credential_id;
-    await h.app.inject({ method: "POST", url: `/v1/credentials/${credentialId}/revoke`, headers: { cookie, "x-organization-id": organizationId } });
+    await h.app.inject({ method: "POST", url: `/v1/credentials/${credentialId}/revoke`, headers: { cookie, "x-trustrail-csrf": "1", "x-organization-id": organizationId } });
 
     const res = await h.app.inject({
       method: "POST",
@@ -407,6 +407,70 @@ describe("enforcement boundary: direct merchant access", () => {
       payload: { organization_id: "org_whatever", order_id: "order_demo_101", amount_minor: 100, currency: "EUR", idempotency_key: "direct-attempt" },
     });
     expect(res.statusCode).toBe(401);
+  });
+});
+
+describe("agent activity tracking", () => {
+  it("updates last_activity_at when an agent authenticates", async () => {
+    const { cookie, organizationId } = await registerAndCreateOrg("activity-owner@example.com", "Activity Co");
+    const agentId = await createAgent(cookie, organizationId, "Activity Agent");
+    const agentSecret = await createCredential(cookie, organizationId, agentId);
+
+    const before = await h.app.inject({ method: "GET", url: `/v1/agents/${agentId}`, headers: { cookie, "x-organization-id": organizationId } });
+    expect(before.json().last_activity_at).toBeNull();
+
+    await h.app.inject({ method: "GET", url: `/v1/connectors/merchant_sandbox/resources/order_demo_101`, headers: { authorization: `Bearer ${agentSecret}` } });
+
+    const after = await h.app.inject({ method: "GET", url: `/v1/agents/${agentId}`, headers: { cookie, "x-organization-id": organizationId } });
+    expect(after.json().last_activity_at).not.toBeNull();
+  });
+});
+
+describe("CSRF protection on cookie-authenticated mutations", () => {
+  it("rejects a cookie-authenticated mutation missing the CSRF header", async () => {
+    const { cookie, organizationId } = await registerAndCreateOrg("csrf-owner@example.com", "CSRF Co");
+    const res = await h.app.inject({
+      method: "POST",
+      url: "/v1/agents",
+      headers: { cookie, "x-organization-id": organizationId }, // no x-trustrail-csrf
+      payload: { name: "No CSRF Agent", description: "", environment: "sandbox" },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.json().code).toBe("CSRF_CHECK_FAILED");
+  });
+
+  it("does not require the CSRF header for a bearer-authenticated (agent) mutation", async () => {
+    const { cookie, organizationId, userId } = await registerAndCreateOrg("csrf-owner-2@example.com", "CSRF Co 2");
+    const agentId = await createAgent(cookie, organizationId, "Agent");
+    const agentSecret = await createCredential(cookie, organizationId, agentId);
+    const res = await h.app.inject({
+      method: "POST",
+      url: "/v1/grants",
+      headers: { authorization: `Bearer ${agentSecret}` }, // agent auth, no cookie, no CSRF header needed
+      payload: {
+        environment: "sandbox",
+        principal_id: userId,
+        subject_agent_id: agentId,
+        parent_grant_id: null,
+        allowed_actions: ["refund.create"],
+        allowed_resource_ids: [],
+        unrestricted_resources: true,
+        allowed_connector_ids: ["merchant_sandbox"],
+        currency: "EUR",
+        max_amount_minor: 1_000,
+        root_budget_limit_minor: null,
+        child_budget_limit_minor: null,
+        valid_from: null,
+        expires_at: new Date(Date.now() + 86_400_000).toISOString(),
+        delegation_allowed: false,
+        max_remaining_depth: 0,
+      },
+    });
+    // Not a root grant issued by a user session (403 FORBIDDEN, expected for
+    // this test's purpose) -- the point is it's rejected for that reason,
+    // never for a missing CSRF header, since no cookie was presented.
+    expect(res.statusCode).toBe(403);
+    expect(res.json().code).not.toBe("CSRF_CHECK_FAILED");
   });
 });
 

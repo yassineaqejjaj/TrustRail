@@ -24,6 +24,7 @@ import { registerDemoRoutes, type DemoRouteDeps } from "./routes/demo.js";
 import type { SubmitActionDeps } from "./gateway/submitAction.js";
 import type { ApprovalDecisionDeps } from "./gateway/approvalResume.js";
 import type { Connector } from "./gateway/connector.js";
+import { CSRF_HEADER_NAME, SESSION_COOKIE_NAME } from "./auth/session.js";
 
 export interface BuildAppOptions {
   db: Db;
@@ -65,6 +66,33 @@ export function buildApp(opts: BuildAppOptions): FastifyInstance {
         return;
       }
       done(err as Error, undefined);
+    }
+  });
+
+  const MUTATING_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
+  /**
+   * Double-submit-style CSRF defense for cookie-authenticated requests
+   * (spec section 4 / docs/BUILD_STATUS.md's previously-open CSRF gap).
+   * Only applies when a session cookie is present -- agent bearer requests
+   * carry no cookie, so a cross-site request could never forge one (the
+   * browser won't attach an Authorization header a page doesn't set
+   * itself). A plain cross-site form POST also can't set this custom
+   * header, and the strict CORS origin already blocks a cross-site
+   * `fetch` from reading the response, so this header's only job is to
+   * rule out the no-JS form-submission case that CORS doesn't cover.
+   */
+  app.addHook("onRequest", async (req, reply) => {
+    if (!MUTATING_METHODS.has(req.method)) return;
+    // A request carrying its own Authorization header authenticates as an
+    // agent, regardless of whether the browser also attached a session
+    // cookie alongside it (credentialed fetches send cookies for the
+    // target origin automatically) -- CSRF only applies to requests that
+    // rely on the cookie for authentication.
+    if (req.headers.authorization) return;
+    const hasSessionCookie = typeof (req as unknown as { cookies?: Record<string, string> }).cookies?.[SESSION_COOKIE_NAME] === "string";
+    if (!hasSessionCookie) return;
+    if (req.headers[CSRF_HEADER_NAME] !== "1") {
+      return reply.code(403).send({ code: "CSRF_CHECK_FAILED", message: `missing or invalid ${CSRF_HEADER_NAME} header`, request_id: req.id });
     }
   });
 
