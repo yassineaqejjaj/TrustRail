@@ -12,9 +12,15 @@
 FROM node:20-slim AS base
 RUN corepack enable
 WORKDIR /app
+# Pre-create the shared signing-key mount point owned by the unprivileged
+# `node` user (built into the base image) so that whichever service writes
+# here first -- `migrate`, running as `node` too, see infra/docker-compose.yml
+# -- leaves files the `api` service's own `node` user can read. Docker
+# copies a fresh named volume's initial ownership from this directory.
+RUN mkdir -p /keys && chown node:node /keys
 
 FROM base AS deps
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
 COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/policy-engine/package.json packages/policy-engine/package.json
 COPY packages/receipt-verifier/package.json packages/receipt-verifier/package.json

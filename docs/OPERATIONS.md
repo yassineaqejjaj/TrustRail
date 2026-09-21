@@ -126,7 +126,9 @@ deployment publicly — there is no additional network-level control assumed.
       `setup:local` defaults).
 - [ ] Signing key private material mounted from a secret store, not a plain
       file on a shared filesystem, if your infra supports it.
-- [ ] `infra/docker-compose.yml` reviewed for your target — it has not been
-      run on this build machine (no Docker available here; see
-      `docs/BUILD_STATUS.md`).
+- [ ] `infra/docker-compose.yml` reviewed for your target. It has been run
+      end-to-end in a local Docker Desktop environment (see
+      `docs/BUILD_STATUS.md`'s V15 entry) — a real cloud target still needs
+      its own review (TLS termination, secret storage, `APP_MODE=production`,
+      the checklist items above), not just a rerun of the local compose file.
 - [ ] Backup/restore procedure actually rehearsed once, not just read.

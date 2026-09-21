@@ -1,24 +1,26 @@
 # docker compose up --build
 #
-# NOT executed on the machine this repo was built on (no Docker available
-# there -- see docs/DECISIONS.md and docs/BUILD_STATUS.md). This is a
-# reviewed, architecturally-correct starting point -- expect to debug real
-# issues the first time it actually runs, and update BUILD_STATUS.md with
-# the result once someone does.
+# Actually built and run end-to-end on 2026-09-21 (Docker Desktop, macOS
+# arm64) -- see docs/BUILD_STATUS.md's V15 entry for what that run found
+# and fixed (a postgres:18+ volume-layout change, a missing tsconfig.base.json
+# in each Dockerfile's build context, and a signing-key file-permission gap
+# between `migrate` and `api`). Needs an `infra/.env` with the variables
+# marked `:?` below (see infra/.env.example if present, or copy the relevant
+# values `pnpm setup:local` generates into the repo root `.env`).
 #
-# Run from the repository root: `docker compose -f infra/docker-compose.yml up --build`
+# Run from the repository root: `docker compose -f infra/docker-compose.yml --env-file infra/.env up --build`
 #
 # Key properties this file is responsible for maintaining:
 # - merchant-sandbox has NO published host port -- only `api`, on the
 #   internal compose network, can reach it. Do not add a `ports:` entry
-#   for it.
+#   for it. Verified for real: a direct connection attempt from the host
+#   to merchant-sandbox's port is refused outright (nothing published),
+#   which is a stronger guarantee than the header check alone.
 # - Migrations (including RLS policy application and the two-role split)
 #   run as a one-shot `migrate` service that must complete successfully
 #   before `api` starts.
 # - The Ed25519 signing key is generated once into a named volume shared
 #   between `migrate` and `api`, never baked into an image layer.
-
-version: "3.9"
 
 services:
   postgres:
@@ -28,7 +30,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set a strong POSTGRES_SUPERUSER_PASSWORD in .env}
       POSTGRES_DB: postgres
     volumes:
-      - trustrail-pgdata:/var/lib/postgresql/data
+      # The postgres:18+ images manage a version-specific subdirectory
+      # themselves (pg_ctlcluster-style layout) and refuse to start if the
+      # volume is mounted directly at .../data instead of the parent dir --
+      # found by actually running this compose file for the first time.
+      - trustrail-pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -55,6 +61,11 @@ services:
     volumes:
       - trustrail-keys:/keys
     working_dir: /app
+    # Runs as the same unprivileged `node` user as the `api` service (its
+    # runtime image's default) so the signing key this service generates
+    # into the shared /keys volume is readable by `api` afterward -- found
+    # by actually running this compose file for the first time.
+    user: "node"
     command: ["node", "apps/api/dist/db/bootstrapAndMigrate.docker.js"]
     networks: [trustrail-internal]
 

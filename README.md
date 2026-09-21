@@ -41,13 +41,13 @@ docs/                   Everything listed below
 - Node.js 20.11+ (tested on Node 26).
 - pnpm (`npm install -g pnpm` if you don't have it).
 - Python 3.9+ with `venv`, only needed for `sdk/python`.
-- **No Docker, no Homebrew, no system PostgreSQL required.** Local
-  Postgres runs via [`embedded-postgres`](https://github.com/leinelissen/embedded-postgres)
+- **No Docker, no Homebrew, no system PostgreSQL required for local dev.**
+  Local Postgres runs via [`embedded-postgres`](https://github.com/leinelissen/embedded-postgres)
   (downloads real Postgres 18 binaries) — see
-  [`docs/DECISIONS.md`](docs/DECISIONS.md) for why. Docker Compose is
-  provided as an alternative deployment path (`infra/docker-compose.yml`)
-  for machines that do have Docker, but has not been exercised on the
-  machine this was built on — see `docs/BUILD_STATUS.md`.
+  [`docs/DECISIONS.md`](docs/DECISIONS.md) for why. Docker Compose is also
+  available (`infra/docker-compose.yml`) as an alternative deployment path
+  for machines that have Docker, and has now been run end-to-end for real
+  — see `docs/BUILD_STATUS.md`'s V15 entry.
 
 ## Quickstart
 
@@ -95,7 +95,12 @@ actual results — not a claim, a report of what was executed.
 
 ## Deployment status
 
-**Local development only, verified.** Production deployment guidance is in
-`docs/OPERATIONS.md`, and Dockerfiles/`docker-compose.yml` are provided, but
-have not been run on this build machine (no Docker available here) — see
-`docs/BUILD_STATUS.md` for exactly what has and hasn't been executed.
+**Local development and a Docker Compose deployment are both verified.**
+`docker compose -f infra/docker-compose.yml --env-file infra/.env up --build`
+has been run end-to-end against real containers, including a live
+register → org → agent → grant → refund flow and independent receipt
+verification — see `docs/BUILD_STATUS.md`'s V15 entry and
+`docs/DECISIONS.md` for the real bugs that run found and fixed. Production
+deployment guidance is in `docs/OPERATIONS.md`. The one piece still
+genuinely unexecuted is `.github/workflows/ci.yml` against a real GitHub
+Actions runner (no such access from this machine).

@@ -48,10 +48,12 @@ Roughly ordered by leverage, not urgency:
 7. **KMS-backed signing keys.** `apps/api/src/gateway/keys.ts` already
    isolates key access behind `getActiveSigningKey`/`getTrustedKeys`; a real
    KMS integration is a swap behind that seam, not a redesign.
-8. **Docker Compose actually run and iterated on.** Written
-   (`infra/docker-compose.yml`) but not exercised on this build machine
-   (no Docker available here) — first real deployment attempt should treat
-   it as a draft to debug, not a finished artifact.
+8. **CI actually run on a real GitHub Actions runner.** `.github/workflows/ci.yml`
+   mirrors `pnpm verify`'s steps but has never executed against a real
+   runner (no such access from this machine). Docker Compose itself
+   *has* now been run end-to-end and had its real bugs fixed
+   (`docs/DECISIONS.md`, `docs/BUILD_STATUS.md`) — this item is narrower
+   than it used to be.
 9. **Broader Playwright coverage.** `tests/e2e` covers exactly the five
    flows spec section 16 names (onboarding, first refund, denial,
    approval, receipt verification); it does not yet cover every page

@@ -50,3 +50,54 @@ hand-written local type for the imported shape, instead of `typeof
 import("...")`, since even a type-only reference to a file still triggers
 the `rootDir` check. This is the one deliberate cross-app coupling in the
 codebase, confined entirely to that one Docker-only script.
+
+## 2026-09-21 — Docker Compose actually run; three real bugs found and fixed
+
+Docker Desktop became available on this machine partway through the build.
+Ran `docker compose -f infra/docker-compose.yml --env-file infra/.env up
+--build` for the first time, exactly as the previous entry predicted would
+be needed, and treated the first run as a debugging session. Three real
+bugs surfaced, none of which any test suite had (or realistically could
+have) caught, since `pnpm verify`'s tests all run against compiled `src`
+via `tsx`/`vitest`, never against the actual `dist` build artifact the way
+a container does:
+
+1. **`postgres:18-alpine`'s data-directory layout changed.** 18+ images
+   refuse to start if the volume is mounted directly at
+   `/var/lib/postgresql/data`; they now manage a version-specific
+   subdirectory themselves and expect the volume mounted at the parent
+   `/var/lib/postgresql`. Fixed in `infra/docker-compose.yml`.
+2. **`tsconfig.base.json` was never copied into any Dockerfile's build
+   context**, so `tsc -p tsconfig.json` (every package's `tsconfig.json`
+   extends it) failed immediately inside every image. Fixed by adding it
+   to the `COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ...` line
+   in `apps/api/Dockerfile`, `apps/web/Dockerfile`, and
+   `apps/merchant-sandbox/Dockerfile`'s `deps` stage.
+3. **`apps/api/src/db/rls.sql` was never copied into `dist/`.** `tsc` only
+   compiles `.ts` files; this raw SQL file sits next to `roles.ts` and is
+   read via `__dirname` at runtime, which worked locally only because
+   `tsx` runs directly against `src`. Fixed by changing
+   `apps/api/package.json`'s `build` script to
+   `tsc -p tsconfig.json && cp src/db/rls.sql dist/db/rls.sql` -- this was
+   a latent bug in the package's own build output, not Docker-specific;
+   any `node dist/index.js` production start without Docker would have
+   hit it too, and nothing in the test suite would have noticed, because
+   tests never exercise `dist/`.
+4. **Signing-key file permissions**: the `migrate` service (Dockerfile
+   `build` target, no `USER` set, so root) generates the Ed25519 signing
+   key into the `trustrail-keys` named volume; `api`'s runtime stage runs
+   as the unprivileged `node` user and couldn't read a root-owned file
+   there. Fixed by pre-creating `/keys` `chown`-ed to `node` in the shared
+   `base` Dockerfile stage, and setting `user: "node"` on the `migrate`
+   compose service so both services write/read as the same uid.
+
+After these fixes, a full live flow (register, create org, create agent +
+credential, issue a grant, run four demo scenarios including
+`direct_merchant_write_rejected`) succeeded against the real running
+containers, and a receipt signed inside the `api` container verified
+independently (`signature_valid: true`, `issuer_trusted: true`).
+`merchant-sandbox`'s "no published port" isolation was also confirmed for
+real, not just by review: a direct connection attempt from the host is
+refused outright. `.github/workflows/ci.yml` remains unexecuted -- no
+GitHub Actions runner access from this machine -- and is the one
+deployment-package piece still genuinely unverified.
