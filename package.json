@@ -1,0 +1,30 @@
+{
+  "name": "trustrail",
+  "private": true,
+  "version": "0.1.0",
+  "description": "TrustRail - control what AI agents can do on behalf of people and companies, and record verifiable receipts of their actions.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11 <27"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "setup:local": "tsx scripts/setup-local.ts",
+    "dev": "tsx scripts/dev.ts",
+    "demo:seed": "tsx scripts/demo-seed.ts",
+    "demo:run": "tsx scripts/demo-run.ts",
+    "demo:reset": "tsx scripts/demo-reset.ts",
+    "benchmark": "tsx scripts/benchmark.ts",
+    "verify": "tsx scripts/verify.ts",
+    "build": "pnpm -r --filter=./packages/* --filter=./apps/* run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "migrate": "pnpm --filter @trustrail/api run migrate"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  }
+}
