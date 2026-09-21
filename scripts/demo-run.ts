@@ -37,7 +37,7 @@ async function main() {
     process.exit(1);
   }
 
-  await startLocalPostgres();
+  const { owns: ownsLocalPg } = await startLocalPostgres();
   let merchant: { startedOwnInstance: boolean; app?: FastifyInstance } | undefined;
 
   try {
@@ -78,7 +78,7 @@ async function main() {
     }
     await closeMerchantPool();
     await closePool();
-    await stopLocalPostgres();
+    await stopLocalPostgres(ownsLocalPg);
   }
 }
 

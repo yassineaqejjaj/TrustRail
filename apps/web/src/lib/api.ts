@@ -154,10 +154,19 @@ export const healthApi = {
   ready: () => apiFetch<{ status: string }>("/health/ready"),
 };
 
+export interface DemoRunStep {
+  step: string;
+  description: string;
+  ok: boolean;
+  detail?: Record<string, unknown>;
+}
+
 export const demoApi = {
-  /** Not implemented server-side yet (see docs/BUILD_STATUS.md) — expected to 404 until POST /v1/demo/runs ships. */
-  run: (orgId: string, scenario: string) =>
-    apiFetch<{ run_id: string }>("/v1/demo/runs", { method: "POST", orgId, body: { scenario } }),
+  /** Only works inside the seeded Northstar Commerce organization (pnpm demo:seed); 422 otherwise, 403 in production mode. */
+  run: (orgId: string, scenarioKey: string) =>
+    apiFetch<{ run_id: string; status: "succeeded" | "failed"; steps: DemoRunStep[] }>("/v1/demo/runs", { method: "POST", orgId, body: { scenario_key: scenarioKey } }),
+  history: (orgId: string) =>
+    apiFetch<{ runs: Array<{ run_id: string; scenario_key: string; status: string; steps: DemoRunStep[]; created_at: string; completed_at: string | null }> }>("/v1/demo/runs", { orgId }),
 };
 
 export type { ActionName };

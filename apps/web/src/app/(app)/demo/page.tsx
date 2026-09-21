@@ -11,18 +11,18 @@ import { Button, Card, DecisionBadge, EmptyState, ErrorBanner, ExecutionBadge, L
 import { formatDateTime, formatMoney } from "@/lib/format";
 
 const SCENARIOS = [
-  { id: "eur80_auto_allow", title: "EUR 80 eligible refund", body: "Below the automatic limit. Expected: ALLOW, executed immediately, signed execution receipt." },
+  { id: "eur80_auto_refund", title: "EUR 80 eligible refund", body: "Below the automatic limit. Expected: ALLOW, executed immediately, signed execution receipt." },
   { id: "eur350_approval", title: "EUR 350 refund via approval", body: "Above automatic, within approval limit. Expected: REQUIRE_APPROVAL, no dispatch until an independent reviewer approves." },
-  { id: "eur700_deny", title: "EUR 700 refund", body: "Above the hard cap. Expected: DENY with AMOUNT_LIMIT, merchant never contacted." },
-  { id: "prompt_injection", title: "\"Ignore the rules\" prompt injection", body: "Free-text reason claims override authority. Expected: DENY — free text never changes policy evaluation." },
-  { id: "child_widening_rejected", title: "Child grant requests EUR 900 cap", body: "Wider than its parent's EUR 500 ceiling. Expected: grant creation rejected with 422, no wider rights created." },
-  { id: "root_revoked_blocks_child", title: "Root revoked before child dispatch", body: "Ancestor revocation must block descendants at next dispatch, even though the child grant itself looks unchanged." },
+  { id: "eur700_denied", title: "EUR 700 refund", body: "Above the hard cap. Expected: DENY with AMOUNT_LIMIT, merchant never contacted." },
+  { id: "prompt_injection_deny", title: "“Ignore the rules” prompt injection", body: "Free-text reason claims override authority. Expected: DENY — free text never changes policy evaluation." },
+  { id: "child_cap_rejected", title: "Child grant requests EUR 900 cap", body: "Wider than its parent's EUR 500 ceiling. Expected: grant creation rejected with 422, no wider rights created." },
+  { id: "root_revoked_denied", title: "Root revoked before child dispatch", body: "Ancestor revocation must block descendants at next dispatch, even though the child grant itself looks unchanged." },
   { id: "idempotent_replay", title: "Repeated request, same idempotency key", body: "Expected: exactly one sandbox refund; the second call returns the same action, not a new one." },
   { id: "idempotency_conflict", title: "Same key, changed amount", body: "Expected: HTTP 409 conflict — no second operation is created." },
-  { id: "receipt_tamper", title: "Receipt amount/hash edited after signing", body: "Expected: local verification fails signature_valid, distinct from issuer trust and recorded outcome." },
-  { id: "concurrent_budget", title: "Concurrent refunds against EUR 100 remaining", body: "Expected: at most EUR 100 commits across every concurrent attempt — the shared reservation ledger is authoritative." },
-  { id: "connector_timeout_unknown", title: "Merchant succeeds but the connection times out", body: "Expected: action state 'unknown', reconciled later to 'succeeded' with no duplicate refund and budget held throughout." },
-  { id: "direct_merchant_write_blocked", title: "Agent attempts a direct merchant write", body: "Expected: network/auth rejection — the gateway holds the only downstream credential." },
+  { id: "receipt_tamper_detected", title: "Receipt amount/hash edited after signing", body: "Expected: local verification fails signature_valid, distinct from issuer trust and recorded outcome." },
+  { id: "concurrent_budget_limit", title: "Concurrent refunds against EUR 100 remaining", body: "Expected: at most EUR 100 commits across every concurrent attempt — the shared reservation ledger is authoritative." },
+  { id: "connector_timeout_reconciled", title: "Merchant succeeds but the connection times out", body: "Expected: action state 'unknown', reconciled later to 'succeeded' with no duplicate refund and budget held throughout." },
+  { id: "direct_merchant_write_rejected", title: "Agent attempts a direct merchant write", body: "Expected: network/auth rejection — the gateway holds the only downstream credential." },
 ];
 
 export default function DemoLabPage() {
@@ -34,12 +34,18 @@ export default function DemoLabPage() {
   async function runScenario(id: string) {
     setRunningId(id);
     try {
-      await demoApi.run(orgId!, id);
-      toast.success("Scenario started");
+      const result = await demoApi.run(orgId!, id);
+      if (result.status === "succeeded") {
+        toast.success("Scenario completed as expected");
+      } else {
+        toast.error("Scenario did not complete as expected", "See the run history below for the failing step.");
+      }
       recent.refetch();
     } catch (err) {
-      if (err instanceof ApiError && err.status === 404) {
-        toast.info("Demo runner coming soon", "POST /v1/demo/runs isn't implemented on the API yet — this scenario is described for reference, not simulated client-side.");
+      if (err instanceof ApiError && err.status === 422) {
+        toast.info("Wrong organization", "The demo lab only runs inside the seeded Northstar Commerce organization — run `pnpm demo:seed` and sign in as owner@northstar.demo.");
+      } else if (err instanceof ApiError && err.status === 403) {
+        toast.info("Demo disabled", "Demo endpoints are disabled in production mode.");
       } else {
         toast.error("Could not start scenario", err instanceof Error ? err.message : "");
       }
@@ -56,9 +62,9 @@ export default function DemoLabPage() {
       />
 
       <div className="mb-6 rounded-xl border border-pending/30 bg-pending/5 p-4 text-sm text-pending">
-        <strong>Known limitation:</strong> the backend's scenario runner (<Mono>POST /v1/demo/runs</Mono>) and seed/reset
-        scripts are not implemented yet (see docs/BUILD_STATUS.md). Clicking "Run scenario" calls the real endpoint and
-        will surface an honest "coming soon" notice rather than faking a result.
+        <strong>Note:</strong> these scenarios only run inside the seeded Northstar Commerce
+        organization. Run <Mono>pnpm demo:seed</Mono> and sign in as{" "}
+        <Mono>owner@northstar.demo</Mono> first, or use <Mono>pnpm demo:run &lt;scenario&gt;</Mono> from the CLI.
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

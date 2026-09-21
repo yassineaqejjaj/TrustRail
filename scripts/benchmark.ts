@@ -32,7 +32,7 @@ async function main() {
     console.error("Local database is not set up yet. Run: pnpm setup:local");
     process.exit(1);
   }
-  await startLocalPostgres();
+  const { owns: ownsLocalPg } = await startLocalPostgres();
 
   let merchantApp: Awaited<ReturnType<typeof buildMerchantSandboxApp>> | undefined;
   try {
@@ -109,7 +109,7 @@ async function main() {
     if (merchantApp) await merchantApp.close();
     await closeMerchantPool();
     await closePool();
-    await stopLocalPostgres();
+    await stopLocalPostgres(ownsLocalPg);
   }
 }
 

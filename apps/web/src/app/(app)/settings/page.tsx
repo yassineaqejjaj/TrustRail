@@ -133,8 +133,8 @@ export default function SettingsPage() {
       <Card className="mt-6 p-5">
         <h2 className="mb-3 text-sm font-semibold text-ink">Security limitations</h2>
         <p className="mb-3 text-sm text-muted">
-          Pulled from docs/PRODUCT_SPEC.md section 15 and docs/BUILD_STATUS.md's known simplifications. No inactive
-          controls here pretend to implement SSO/SCIM or any other feature that doesn't exist.
+          Pulled from docs/PRODUCT_SPEC.md section 15 and docs/BUILD_STATUS.md&rsquo;s known simplifications. No inactive
+          controls here pretend to implement SSO/SCIM or any other feature that doesn&rsquo;t exist.
         </p>
         <ul className="list-disc space-y-2 pl-5 text-sm text-muted">
           {KNOWN_LIMITATIONS.map((l) => (

@@ -20,14 +20,14 @@ export default function AgentsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "disabled" | "revoked">("all");
   const [createOpen, setCreateOpen] = useState(false);
 
-  const agents = agentsQuery.data?.agents ?? [];
   const filtered = useMemo(() => {
+    const agents = agentsQuery.data?.agents ?? [];
     return agents.filter((a) => {
       if (statusFilter !== "all" && a.status !== statusFilter) return false;
       if (search && !a.name.toLowerCase().includes(search.toLowerCase()) && !a.agent_id.includes(search)) return false;
       return true;
     });
-  }, [agents, search, statusFilter]);
+  }, [agentsQuery.data, search, statusFilter]);
 
   return (
     <div>

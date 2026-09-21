@@ -21,7 +21,7 @@ async function main() {
     console.error("Local database is not set up yet. Run: pnpm setup:local");
     process.exit(1);
   }
-  await startLocalPostgres();
+  const { owns: ownsLocalPg } = await startLocalPostgres();
   try {
     const db = getDb();
     const rows = await db.select().from(organizations).where(eq(organizations.name, DEMO_ORGANIZATION_NAME)).limit(1);
@@ -39,7 +39,7 @@ async function main() {
     console.log(`Reset complete for organization ${org.id} (${DEMO_ORGANIZATION_NAME}).`);
   } finally {
     await closePool();
-    await stopLocalPostgres();
+    await stopLocalPostgres(ownsLocalPg);
   }
 }
 

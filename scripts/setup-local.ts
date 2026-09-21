@@ -42,7 +42,7 @@ async function main() {
   });
 
   console.log("starting local PostgreSQL...");
-  await startLocalPostgres();
+  const { owns: ownsLocalPg } = await startLocalPostgres();
 
   try {
     console.log("bootstrapping roles and databases (idempotent)...");
@@ -91,7 +91,7 @@ async function main() {
     console.log("\nSetup complete. Next: pnpm dev");
   } finally {
     await closePool();
-    await stopLocalPostgres();
+    await stopLocalPostgres(ownsLocalPg);
   }
 }
 

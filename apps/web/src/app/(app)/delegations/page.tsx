@@ -19,7 +19,7 @@ export default function DelegationsPage() {
   const agentsQuery = useApi(() => agentsApi.list(orgId!), [orgId], { skip: !orgId });
   const [selected, setSelected] = useState<Grant | null>(null);
 
-  const grants = grantsQuery.data?.grants ?? [];
+  const grants = useMemo(() => grantsQuery.data?.grants ?? [], [grantsQuery.data]);
   const agentName = useMemo(() => {
     const map = new Map((agentsQuery.data?.agents ?? []).map((a) => [a.agent_id, a.name] as const));
     return (id: string) => map.get(id) ?? id;

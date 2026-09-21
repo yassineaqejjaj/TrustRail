@@ -11,11 +11,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@trustrail/contracts": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.2",
-    "@radix-ui/react-tabs": "^1.1.1",
     "@radix-ui/react-dropdown-menu": "^2.1.2",
+    "@radix-ui/react-tabs": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.4",
+    "@trustrail/contracts": "workspace:*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "14.2.18",
@@ -27,6 +27,8 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.18",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3"

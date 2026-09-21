@@ -12,7 +12,8 @@ async function main() {
   }
 
   console.log("starting local PostgreSQL...");
-  await startLocalPostgres();
+  const { owns } = await startLocalPostgres();
+  if (!owns) console.log("(reusing an already-running local PostgreSQL instance)");
 
   const children: ChildProcess[] = [];
   const spawnDev = (name: string, cwd: string, extraEnv: Record<string, string> = {}) => {
@@ -40,7 +41,7 @@ async function main() {
   const shutdown = async () => {
     console.log("\nshutting down...");
     for (const child of children) child.kill("SIGTERM");
-    await stopLocalPostgres();
+    await stopLocalPostgres(owns);
     process.exit(0);
   };
   process.on("SIGINT", shutdown);

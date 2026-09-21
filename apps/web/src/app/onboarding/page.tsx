@@ -368,7 +368,7 @@ function Checklist({ organizationId, userId }: { organizationId: string; userId:
         ) : step3Done ? (
           <p className="text-sm text-muted">An active credential already exists for this agent. Rotate to reveal a new one if needed.</p>
         ) : (
-          <p className="text-sm text-muted">Create a credential to authenticate this agent's requests.</p>
+          <p className="text-sm text-muted">Create a credential to authenticate this agent&rsquo;s requests.</p>
         )}
         {primaryAgent && (
           <Button
@@ -442,7 +442,7 @@ function Checklist({ organizationId, userId }: { organizationId: string; userId:
       <StepShell index={5} title="Run your first action" status={!step4Done ? "todo" : step5Done ? "done" : "active"}>
         {!revealedSecret ? (
           <p className="text-sm text-muted">
-            The agent's secret is only held in this browser tab's memory. Rotate a new credential above to run an
+            The agent&rsquo;s secret is only held in this browser tab&rsquo;s memory. Rotate a new credential above to run an
             action in this session.
           </p>
         ) : (
@@ -477,9 +477,9 @@ function Checklist({ organizationId, userId }: { organizationId: string; userId:
               </Field>
             </div>
             <p className="text-xs text-muted">
-              Note: freshly created organizations have no seeded merchant orders yet (there is no public demo-seed
-              endpoint in this build — see Settings → Known limitations), so this may correctly deny with
-              <Mono className="mx-1">STATE_UNAVAILABLE</Mono> if <Mono>{resourceId}</Mono> doesn't exist in the sandbox.
+              Note: freshly created organizations have no seeded merchant orders yet — run <Mono>pnpm demo:seed</Mono>{" "}
+              for a ready-made org with sample orders, or seed your own via the merchant sandbox. Until then this may
+              correctly deny with <Mono className="mx-1">STATE_UNAVAILABLE</Mono> if <Mono>{resourceId}</Mono> doesn&rsquo;t exist in the sandbox.
               That is fail-closed behavior working as intended, not a broken flow.
             </p>
             <div>

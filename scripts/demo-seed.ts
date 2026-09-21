@@ -10,7 +10,7 @@ async function main() {
     console.error("Local database is not set up yet. Run: pnpm setup:local");
     process.exit(1);
   }
-  await startLocalPostgres();
+  const { owns: ownsLocalPg } = await startLocalPostgres();
   try {
     const db = getDb();
     const result = await seedNorthstarCommerce(db);
@@ -30,7 +30,7 @@ async function main() {
     console.log("\nNext: pnpm dev, then sign in and open the Demo Lab page, or run `pnpm demo:run <scenario>`.");
   } finally {
     await closePool();
-    await stopLocalPostgres();
+    await stopLocalPostgres(ownsLocalPg);
   }
 }
 
