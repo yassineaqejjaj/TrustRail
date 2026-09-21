@@ -1,19 +1,26 @@
 /**
- * Docker Compose's one-shot `migrate` service entrypoint
- * (infra/docker-compose.yml). Bootstraps the trustrail_migrator/
- * trustrail_app role split against a real external Postgres container
- * (as opposed to scripts/setup-local.ts, which manages its own embedded
- * instance), runs both apps' migrations, and generates a signing key into
- * the shared `/keys` volume if none exists yet. Mirrors
- * scripts/setup-local.ts's logic; kept separate because this one talks to
- * an already-running Postgres server rather than starting its own.
+ * Bootstraps the trustrail_migrator/trustrail_app role split against a
+ * real external Postgres server (as opposed to scripts/setup-local.ts,
+ * which manages its own embedded instance), runs both apps' migrations,
+ * and generates a signing key into the `/keys` volume if none usable
+ * exists yet. Mirrors scripts/setup-local.ts's logic; kept separate
+ * because this one talks to an already-running Postgres server rather
+ * than starting its own.
  *
- * NOT executed on the machine this was authored on (no Docker available
- * there) -- see docs/BUILD_STATUS.md.
+ * Used two ways:
+ * - Docker Compose's one-shot `migrate` service invokes this file
+ *   directly (infra/docker-compose.yml) before `api` starts.
+ * - `runBootstrapAndMigrate` is also called from apps/api/src/index.ts's
+ *   own boot sequence, so a single-process host (no separate pre-deploy
+ *   step with reliable volume access, e.g. Railway) can self-migrate.
+ *   Everything here is idempotent, so running it from both places on the
+ *   same target is redundant but harmless.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import pg from "pg";
+import { eq } from "drizzle-orm";
 import { bootstrapRolesAndDatabase } from "./roles.js";
 import { runMigrations } from "./migrate.js";
 import { getDb, closePool } from "./client.js";
@@ -23,7 +30,7 @@ import { generateSigningKeyPair } from "@trustrail/receipt-verifier";
 
 const KEYS_DIR = process.env.SIGNING_KEYS_DIR ?? "/keys";
 
-async function main() {
+export async function runBootstrapAndMigrate(): Promise<void> {
   const host = process.env.POSTGRES_HOST ?? "postgres";
   const port = Number(process.env.POSTGRES_PORT ?? 5432);
   const superuserPassword = process.env.POSTGRES_SUPERUSER_PASSWORD;
@@ -66,8 +73,18 @@ async function main() {
   console.log("checking for a signing key...");
   process.env.APP_DATABASE_URL = `postgres://trustrail_app:${appPassword}@${host}:${port}/trustrail`;
   const db = getDb();
-  const existingKeys = await db.select().from(signingKeys);
-  if (existingKeys.length === 0) {
+  const activeKeys = await db.select().from(signingKeys).where(eq(signingKeys.status, "active"));
+  // A DB row alone isn't enough: the private key file lives on a mounted
+  // volume that can be replaced (or never actually persisted, e.g. a
+  // platform whose pre-deploy step doesn't share the runtime container's
+  // volume) independently of the database. Trust only a row whose file is
+  // actually present.
+  const usableKey = activeKeys.find((k) => k.privateKeyRef.startsWith("file:") && existsSync(k.privateKeyRef.slice("file:".length)));
+  if (!usableKey) {
+    if (activeKeys.length > 0) {
+      await db.update(signingKeys).set({ status: "revoked" }).where(eq(signingKeys.status, "active"));
+      console.log(`marked ${activeKeys.length} signing key(s) as revoked -- their private key file is missing on this volume`);
+    }
     mkdirSync(KEYS_DIR, { recursive: true });
     const keys = await generateSigningKeyPair();
     const keyPath = path.join(KEYS_DIR, `${keys.kid}.json`);
@@ -81,14 +98,17 @@ async function main() {
     });
     console.log(`generated signing key ${keys.kid} -> ${keyPath}`);
   } else {
-    console.log(`found ${existingKeys.length} existing signing key(s), leaving them as-is`);
+    console.log(`found a usable signing key (${usableKey.kid}), leaving it as-is`);
   }
-  await closePool();
 
   console.log("migrate service complete.");
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  runBootstrapAndMigrate()
+    .then(closePool)
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+}

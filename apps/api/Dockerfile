@@ -53,7 +53,12 @@ ENV NODE_ENV=production
 # without Docker available. A pruned production image is a reasonable
 # follow-up once this can actually be tested (docs/ROADMAP.md).
 COPY --from=build /app /app
+COPY apps/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 WORKDIR /app/apps/api
 EXPOSE 4000
-USER node
+# No `USER node` here: the entrypoint starts as root to fix up the mounted
+# signing-keys volume's ownership, then drops to `node` itself before
+# exec'ing the real command (see docker-entrypoint.sh).
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "dist/index.js"]

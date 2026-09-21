@@ -13,9 +13,23 @@ export const metadata: Metadata = {
     "TrustRail controls what AI agents can do on behalf of people and companies, then records verifiable receipts of those actions.",
 };
 
+const THEME_INIT_SCRIPT = `
+(function () {
+  try {
+    var stored = localStorage.getItem("trustrail.theme");
+    if (stored === "light" || stored === "dark") {
+      document.documentElement.setAttribute("data-theme", stored);
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${plexMono.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-screen bg-bg font-sans text-ink antialiased">
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>

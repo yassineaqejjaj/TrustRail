@@ -21,17 +21,27 @@
   --color-border: 228 231 236;
 }
 
+/* Dark palette applies by system preference, unless the user picked an explicit
+   theme via the toggle (data-theme="light"/"dark" on <html>, see ThemeToggle). */
 @media (prefers-color-scheme: dark) {
-  :root {
-    /* Brand/semantic colors (accent, success, pending, danger, sidebar) are
-       intentionally left unchanged -- only the neutral surface/text/border
-       scale flips for dark mode. */
+  :root:not([data-theme="light"]) {
     --color-bg: 10 13 20;
     --color-surface: 21 27 39;
     --color-ink: 237 239 243;
     --color-muted: 148 163 184;
     --color-border: 40 49 63;
   }
+}
+
+:root[data-theme="dark"] {
+  /* Brand/semantic colors (accent, success, pending, danger, sidebar) are
+     intentionally left unchanged -- only the neutral surface/text/border
+     scale flips for dark mode. */
+  --color-bg: 10 13 20;
+  --color-surface: 21 27 39;
+  --color-ink: 237 239 243;
+  --color-muted: 148 163 184;
+  --color-border: 40 49 63;
 }
 
 html,
@@ -76,13 +86,21 @@ body {
 }
 
 @media (prefers-color-scheme: dark) {
-  .glass {
+  :root:not([data-theme="light"]) .glass {
     background: rgba(21, 27, 39, 0.72);
     border-color: rgba(255, 255, 255, 0.08);
     box-shadow:
       0 1px 2px 0 rgba(0, 0, 0, 0.3),
       0 8px 24px 0 rgba(0, 0, 0, 0.4);
   }
+}
+
+:root[data-theme="dark"] .glass {
+  background: rgba(21, 27, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 2px 0 rgba(0, 0, 0, 0.3),
+    0 8px 24px 0 rgba(0, 0, 0, 0.4);
 }
 
 /* Dark variant of .glass, for panels shown against the dark sidebar/topbar. */
@@ -170,7 +188,11 @@ body {
   background: transparent;
 }
 @media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-thumb {
+  :root:not([data-theme="light"]) ::-webkit-scrollbar-thumb {
     background: #3a4657;
   }
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #3a4657;
 }

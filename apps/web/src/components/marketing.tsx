@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import clsx from "clsx";
 import { TrustRailMark } from "./TrustRailMark";
+import { ThemeToggle } from "./ThemeToggle";
 
 const NAV_LINKS = [
   { href: "/product", label: "Product" },
@@ -37,6 +38,7 @@ export function MarketingHeader({ active }: { active?: string }) {
           ))}
         </nav>
         <div className="flex items-center gap-3 md:gap-5">
+          <ThemeToggle className="text-muted hover:bg-surface hover:text-ink" />
           <Link href="/onboarding?mode=login" className="hidden text-sm font-medium text-ink hover:text-accent md:inline">
             Log in
           </Link>

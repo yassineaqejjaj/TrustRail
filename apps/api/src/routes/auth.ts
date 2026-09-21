@@ -85,7 +85,12 @@ async function createSessionAndSetCookie(db: Db, config: AppConfig, reply: impor
   reply.setCookie(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: config.SESSION_COOKIE_SECURE,
-    sameSite: "lax",
+    // "none" is required once the frontend and API are on different
+    // registrable domains (e.g. a Vercel-hosted web app calling a
+    // Railway-hosted API) -- browsers won't attach a "lax" cookie to a
+    // cross-site fetch/XHR. "none" requires `secure`, which
+    // SESSION_COOKIE_SECURE already guarantees whenever this branch runs.
+    sameSite: config.SESSION_COOKIE_SECURE ? "none" : "lax",
     path: "/",
     maxAge: SESSION_TTL_MS / 1000,
   });

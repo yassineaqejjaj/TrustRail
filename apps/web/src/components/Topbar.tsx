@@ -8,6 +8,7 @@ import { useAuth } from "@/context/auth-context";
 import { initials } from "@/lib/format";
 import { Sidebar } from "./Sidebar";
 import { TrustRailMark } from "./TrustRailMark";
+import { ThemeToggle } from "./ThemeToggle";
 
 function displayName(email: string) {
   const local = email.split("@")[0] ?? email;
@@ -79,6 +80,7 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-4">
+        <ThemeToggle className="text-white/70 hover:bg-white/10 hover:text-white" />
         <a href="/developers" className="hidden text-[13px] text-white/65 hover:text-white sm:inline">
           Help
         </a>
