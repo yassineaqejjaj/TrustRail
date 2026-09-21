@@ -17,7 +17,7 @@ infra/keys/*.json
 !infra/keys/.gitkeep
 .trustrail/
 .claude/
-.tsbuildinfo
+*.tsbuildinfo
 playwright-report/
 test-results/
 sdk/python/.venv/
