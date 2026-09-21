@@ -8,3 +8,4 @@ export * from "./receipts.js";
 export * from "./agents.js";
 export * from "./approvals.js";
 export * from "./canonical.js";
+export * from "./demoFixtures.js";

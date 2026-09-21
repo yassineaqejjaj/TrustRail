@@ -33,7 +33,7 @@
   "devDependencies": {
     "drizzle-kit": "^0.28.1",
     "@types/pg": "^8.11.10",
-    "embedded-postgres": "18.4.0-beta.17",
+    "@trustrail/test-support": "workspace:*",
     "typescript": "^5.6.3",
     "tsx": "^4.19.2",
     "vitest": "^2.1.8"

@@ -7,10 +7,20 @@ settings:
 importers:
 
   .:
+    dependencies:
+      embedded-postgres:
+        specifier: 18.4.0-beta.17
+        version: 18.4.0-beta.17
+      pg:
+        specifier: ^8.13.1
+        version: 8.23.0
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
         version: 22.20.4
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.23.1
       tsx:
         specifier: ^4.19.2
         version: 4.23.15
@@ -66,15 +76,61 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@trustrail/test-support':
+        specifier: workspace:*
+        version: link:../../packages/test-support
       '@types/pg':
         specifier: ^8.11.10
         version: 8.23.1
       drizzle-kit:
         specifier: ^0.28.1
         version: 0.28.1
-      embedded-postgres:
-        specifier: 18.4.0-beta.17
-        version: 18.4.0-beta.17
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.15
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.4)
+
+  apps/merchant-sandbox:
+    dependencies:
+      '@fastify/sensible':
+        specifier: ^6.0.1
+        version: 6.0.5
+      '@trustrail/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      drizzle-orm:
+        specifier: ^0.36.4
+        version: 0.36.4(@types/pg@8.23.1)(pg@8.23.0)
+      fastify:
+        specifier: ^5.1.0
+        version: 5.12.5
+      nanoid:
+        specifier: ^5.0.9
+        version: 5.1.16
+      pg:
+        specifier: ^8.13.1
+        version: 8.23.0
+      pino:
+        specifier: ^9.5.0
+        version: 9.14.0
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@trustrail/test-support':
+        specifier: workspace:*
+        version: link:../../packages/test-support
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.23.1
+      drizzle-kit:
+        specifier: ^0.28.1
+        version: 0.28.1
       tsx:
         specifier: ^4.19.2
         version: 4.23.15
@@ -126,6 +182,22 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.4)
+
+  packages/test-support:
+    dependencies:
+      embedded-postgres:
+        specifier: 18.4.0-beta.17
+        version: 18.4.0-beta.17
+      pg:
+        specifier: ^8.13.1
+        version: 8.23.0
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.23.1
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
 
 packages:
 

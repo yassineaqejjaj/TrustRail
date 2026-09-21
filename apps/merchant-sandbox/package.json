@@ -1,0 +1,34 @@
+{
+  "name": "@trustrail/merchant-sandbox",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'no lint configured for merchant-sandbox'",
+    "migrate": "tsx src/db/migrate.ts",
+    "migrate:generate": "drizzle-kit generate",
+    "test": "vitest run --pool=forks --poolOptions.forks.singleFork=true"
+  },
+  "dependencies": {
+    "@trustrail/contracts": "workspace:*",
+    "fastify": "^5.1.0",
+    "@fastify/sensible": "^6.0.1",
+    "drizzle-orm": "^0.36.4",
+    "pg": "^8.13.1",
+    "nanoid": "^5.0.9",
+    "zod": "^3.24.1",
+    "pino": "^9.5.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.28.1",
+    "@types/pg": "^8.11.10",
+    "@trustrail/test-support": "workspace:*",
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2",
+    "vitest": "^2.1.8"
+  }
+}
