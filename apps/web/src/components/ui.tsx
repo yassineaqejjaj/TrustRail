@@ -7,7 +7,7 @@ import type { Decision, ExecutionState, ApprovalStatus } from "@trustrail/contra
 import { APPROVAL_LABEL, DECISION_COLOR, DECISION_LABEL, EXECUTION_LABEL, executionColor } from "@/lib/format";
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={clsx("rounded-xl border border-border bg-surface shadow-card", className)}>{children}</div>;
+  return <div className={clsx("glass", className)}>{children}</div>;
 }
 
 export function PageHeader({
@@ -30,40 +30,27 @@ export function PageHeader({
   );
 }
 
+const pillClass = "mono inline-flex items-center rounded-full px-2.5 py-[3px] text-[11.5px] font-semibold";
+
 export function DecisionBadge({ decision }: { decision: Decision }) {
   const c = DECISION_COLOR[decision];
-  return (
-    <span className={clsx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", c.bg, c.text)}>
-      <span className={clsx("h-1.5 w-1.5 rounded-full", c.dot)} aria-hidden />
-      {DECISION_LABEL[decision]}
-    </span>
-  );
+  return <span className={clsx(pillClass, c.bg, c.text)}>{DECISION_LABEL[decision]}</span>;
 }
 
 export function ExecutionBadge({ state }: { state: ExecutionState }) {
   const c = executionColor(state);
-  return (
-    <span className={clsx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", c.bg, c.text)}>
-      <span className={clsx("h-1.5 w-1.5 rounded-full", c.dot)} aria-hidden />
-      {EXECUTION_LABEL[state]}
-    </span>
-  );
+  return <span className={clsx(pillClass, c.bg, c.text)}>{EXECUTION_LABEL[state]}</span>;
 }
 
 export function ApprovalBadge({ status }: { status: ApprovalStatus }) {
-  const map: Record<ApprovalStatus, { bg: string; text: string; dot: string }> = {
-    pending: { bg: "bg-pending/10", text: "text-pending", dot: "bg-pending" },
-    approved: { bg: "bg-success/10", text: "text-success", dot: "bg-success" },
-    rejected: { bg: "bg-danger/10", text: "text-danger", dot: "bg-danger" },
-    expired: { bg: "bg-muted/10", text: "text-muted", dot: "bg-muted" },
+  const map: Record<ApprovalStatus, { bg: string; text: string }> = {
+    pending: { bg: "bg-pending/10", text: "text-pending" },
+    approved: { bg: "bg-success/10", text: "text-success" },
+    rejected: { bg: "bg-danger/10", text: "text-danger" },
+    expired: { bg: "bg-muted/10", text: "text-muted" },
   };
   const c = map[status];
-  return (
-    <span className={clsx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", c.bg, c.text)}>
-      <span className={clsx("h-1.5 w-1.5 rounded-full", c.dot)} aria-hidden />
-      {APPROVAL_LABEL[status]}
-    </span>
-  );
+  return <span className={clsx(pillClass, c.bg, c.text)}>{APPROVAL_LABEL[status]}</span>;
 }
 
 export function StatusDot({ tone }: { tone: "success" | "pending" | "danger" | "muted" }) {
@@ -161,8 +148,8 @@ export function Button({
   className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "danger" | "ghost"; size?: "sm" | "md" }) {
-  const base = "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none";
-  const sizes = { sm: "px-2.5 py-1.5 text-xs", md: "px-3.5 py-2 text-sm" };
+  const base = "inline-flex items-center justify-center gap-1.5 rounded-[10px] font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none";
+  const sizes = { sm: "px-3 py-2 text-xs", md: "px-[15px] py-[11px] text-sm" };
   const variants = {
     primary: "bg-accent text-white hover:bg-accent-hover",
     secondary: "border border-border bg-surface text-ink hover:bg-bg",

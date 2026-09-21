@@ -3,13 +3,41 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
+
+  /* Space-separated R G B channels so Tailwind's rgb(var(--x) / <alpha-value>)
+     pattern can compose opacity modifiers like bg-bg/50. */
+  --color-bg: 247 248 250;
+  --color-surface: 255 255 255;
+  --color-sidebar: 16 24 40;
+  --color-sidebar-hover: 29 41 57;
+  --color-accent: 49 92 253;
+  --color-accent-hover: 39 72 214;
+  --color-success: 22 132 91;
+  --color-pending: 183 121 31;
+  --color-danger: 198 52 52;
+  --color-ink: 16 24 40;
+  --color-muted: 102 112 133;
+  --color-border: 228 231 236;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Brand/semantic colors (accent, success, pending, danger, sidebar) are
+       intentionally left unchanged -- only the neutral surface/text/border
+       scale flips for dark mode. */
+    --color-bg: 10 13 20;
+    --color-surface: 21 27 39;
+    --color-ink: 237 239 243;
+    --color-muted: 148 163 184;
+    --color-border: 40 49 63;
+  }
 }
 
 html,
 body {
-  background: #f7f8fa;
-  color: #111827;
+  background: rgb(var(--color-bg));
+  color: rgb(var(--color-ink));
 }
 
 body {
@@ -18,7 +46,7 @@ body {
 }
 
 * {
-  border-color: #e4e7ec;
+  border-color: rgb(var(--color-border));
 }
 
 :focus-visible {
@@ -32,7 +60,90 @@ body {
 }
 
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono), "IBM Plex Mono", ui-monospace, monospace;
+}
+
+/* Frosted-glass surface used by Card and other elevated panels. */
+.glass {
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px 0 rgba(16, 24, 40, 0.04),
+    0 8px 24px 0 rgba(16, 24, 40, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass {
+    background: rgba(21, 27, 39, 0.72);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 1px 2px 0 rgba(0, 0, 0, 0.3),
+      0 8px 24px 0 rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Dark variant of .glass, for panels shown against the dark sidebar/topbar. */
+.glass-dark {
+  background: rgba(16, 24, 40, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px 0 rgba(16, 24, 40, 0.2),
+    0 8px 24px 0 rgba(16, 24, 40, 0.3);
+}
+
+/* Ambient accent-colored glow behind glass panels, matching the console's visual design. */
+.bg-glow {
+  position: relative;
+}
+.bg-glow::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(600px circle at 15% 0%, rgba(49, 92, 253, 0.1), transparent 60%),
+    radial-gradient(500px circle at 85% 20%, rgba(49, 92, 253, 0.08), transparent 60%);
+}
+
+/* Sidebar navigation primitives. */
+.navlabel {
+  margin: 18px 0 6px;
+  padding: 0 12px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.navitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.navitem:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.05);
+}
+.navitem.active {
+  color: rgb(255, 255, 255);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  font-weight: 600;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -57,4 +168,9 @@ body {
 }
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: #3a4657;
+  }
 }

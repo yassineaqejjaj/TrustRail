@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { Check, Circle, Loader2, ShieldHalf } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
 import { agentsApi, actionsApi, grantsApi } from "@/lib/api";
 import { errorMessage } from "@/lib/api-client";
 import { useApi } from "@/hooks/useApi";
 import { Button, Card, CopyButton, DecisionBadge, ExecutionBadge, Field, LoadingBlock, Mono, inputClass } from "@/components/ui";
+import { SetupHeader, SetupHero, SetupProgress, LivePreviewPanel, type SetupStep, type PreviewRow } from "@/components/onboarding-chrome";
 import { formatMoney } from "@/lib/format";
 import type { AgentDetail } from "@/lib/types";
 
@@ -17,17 +18,14 @@ export default function OnboardingPage() {
   const { status, me } = useAuth();
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex h-16 max-w-4xl items-center gap-2 px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <ShieldHalf className="h-6 w-6 text-accent" />
-            <span className="text-[15px] font-semibold tracking-tight text-ink">TrustRail</span>
-          </Link>
-        </div>
-      </header>
+    <div className="bg-glow min-h-screen bg-bg">
+      <SetupHeader exitHref={status === "authenticated" ? "/dashboard" : undefined} />
+      <SetupHero
+        title="Set up TrustRail"
+        description="Connect your agents, set the limits, and run a real, verified action. About 3 minutes."
+      />
 
-      <main className="mx-auto max-w-2xl px-6 py-12">
+      <main className="mx-auto max-w-4xl px-6 py-12">
         {status === "loading" && <LoadingBlock label="Checking your session…" />}
         {status === "anonymous" && <AuthStep />}
         {status === "authenticated" && me && <OrganizationAndChecklist />}
@@ -38,14 +36,15 @@ export default function OnboardingPage() {
 
 function AuthStep() {
   const { login, register } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("register");
+  const searchParams = useSearchParams();
+  const [mode, setMode] = useState<"login" | "register">(searchParams.get("mode") === "login" ? "login" : "register");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <Card className="p-8">
+    <Card className="mx-auto max-w-md p-8">
       <h1 className="text-xl font-semibold text-ink">Welcome to TrustRail</h1>
       <p className="mt-1 text-sm text-muted">
         {mode === "register" ? "Create an account to set up your organization." : "Sign in to continue onboarding."}
@@ -130,7 +129,7 @@ function OrganizationAndChecklist() {
 
   if (creatingOrg || !orgId) {
     return (
-      <Card className="p-8">
+      <Card className="mx-auto max-w-md p-8">
         <h1 className="text-xl font-semibold text-ink">Create your organization</h1>
         <p className="mt-1 text-sm text-muted">
           Creating an organization makes you its Owner and automatically seeds a published default refund policy
@@ -301,218 +300,248 @@ function Checklist({ organizationId, userId }: { organizationId: string; userId:
   const [amountEuro, setAmountEuro] = useState("80");
   const step5Done = actionResult !== null;
 
+  const progressSteps: SetupStep[] = [
+    { label: "Organization", status: "done" },
+    { label: "Agent", status: step2Done ? "done" : "active" },
+    { label: "Credential", status: !step2Done ? "todo" : step3Done ? "done" : "active" },
+    { label: "Grant", status: !step3Done ? "todo" : step4Done ? "done" : "active" },
+    { label: "Test run", status: !step4Done ? "todo" : step5Done ? "done" : "active" },
+  ];
+
+  // Always illustrative, never populated from actionResult: this panel sits on
+  // the same page as the real DecisionBadge/ExecutionBadge in step 5, and its
+  // job (per the "EXAMPLE" label) is to preview the shape of a verified action
+  // before one exists -- not to duplicate the real result in different words.
+  const previewRows: PreviewRow[] = [
+    { label: "Refund Agent", tone: "start" },
+    { label: "Authenticated", tone: "success" },
+    { label: "€350 refund requested", tone: "success" },
+    { label: "Policy checked", tone: "success" },
+    { label: "Human approval", tone: "pending" },
+    { label: "Executed", tone: "success" },
+    { label: "Signed receipt", tone: "success" },
+  ];
+
   return (
-    <div className="flex flex-col gap-4">
-      <StepShell index={1} title="Organization created" status="done">
-        <p className="text-sm text-muted">
-          A default sandbox policy for <Mono>refund.create</Mono> was published automatically: EUR 100 automatic,
-          EUR 500 requires approval, EUR 1,000 daily budget.
-        </p>
-      </StepShell>
+    <div>
+      <SetupProgress steps={progressSteps} />
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="flex flex-col gap-4">
+          <StepShell index={1} title="Organization created" status="done">
+            <p className="text-sm text-muted">
+              A default sandbox policy for <Mono>refund.create</Mono> was published automatically: EUR 100 automatic,
+              EUR 500 requires approval, EUR 1,000 daily budget.
+            </p>
+          </StepShell>
 
-      <StepShell index={2} title="Register your first agent" status={step2Done ? "done" : "active"}>
-        {step2Done ? (
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            {agents.map((a) => (
-              <button
-                key={a.agent_id}
-                onClick={() => setSelectedAgentId(a.agent_id)}
-                className={`rounded-full border px-3 py-1 ${primaryAgent?.agent_id === a.agent_id ? "border-accent bg-accent/10 text-accent" : "border-border text-muted"}`}
+          <StepShell index={2} title="Register your first agent" status={step2Done ? "done" : "active"}>
+            {step2Done ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                {agents.map((a) => (
+                  <button
+                    key={a.agent_id}
+                    onClick={() => setSelectedAgentId(a.agent_id)}
+                    className={`rounded-full border px-3 py-1 ${primaryAgent?.agent_id === a.agent_id ? "border-accent bg-accent/10 text-accent" : "border-border text-muted"}`}
+                  >
+                    {a.name}
+                  </button>
+                ))}
+              </div>
+            ) : creatingAgent ? (
+              <form
+                className="flex flex-col gap-3"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setBusy(true);
+                  try {
+                    await agentsApi.create(organizationId, { name: agentName, description: "First-line customer support assistant", environment: "sandbox" });
+                    agentsQuery.refetch();
+                    toast.success("Agent registered");
+                  } catch (err) {
+                    toast.error("Could not register agent", errorMessage(err));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
               >
-                {a.name}
-              </button>
-            ))}
-          </div>
-        ) : creatingAgent ? (
-          <form
-            className="flex flex-col gap-3"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setBusy(true);
-              try {
-                await agentsApi.create(organizationId, { name: agentName, description: "First-line customer support assistant", environment: "sandbox" });
-                agentsQuery.refetch();
-                toast.success("Agent registered");
-              } catch (err) {
-                toast.error("Could not register agent", errorMessage(err));
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <Field label="Agent name" htmlFor="agent-name">
-              <input id="agent-name" className={inputClass} value={agentName} onChange={(e) => setAgentName(e.target.value)} required />
-            </Field>
-            <div>
-              <Button type="submit" disabled={busy}>
-                {busy ? "Registering…" : "Register agent"}
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <Button onClick={() => setCreatingAgent(true)}>Register an agent</Button>
-        )}
-      </StepShell>
-
-      <StepShell index={3} title="Reveal an API key" status={!step2Done ? "todo" : step3Done && !revealedSecret ? "done" : "active"}>
-        {revealedSecret ? (
-          <div className="rounded-lg border border-pending/30 bg-pending/5 p-3">
-            <p className="text-xs font-medium text-pending">
-              This secret is shown once and cannot be retrieved again. Copy it now.
-            </p>
-            <div className="mt-2 flex items-center gap-2">
-              <Mono className="rounded bg-surface px-2 py-1 border border-border break-all">{revealedSecret.secret}</Mono>
-              <CopyButton value={revealedSecret.secret} />
-            </div>
-          </div>
-        ) : step3Done ? (
-          <p className="text-sm text-muted">An active credential already exists for this agent. Rotate to reveal a new one if needed.</p>
-        ) : (
-          <p className="text-sm text-muted">Create a credential to authenticate this agent&rsquo;s requests.</p>
-        )}
-        {primaryAgent && (
-          <Button
-            className="mt-3"
-            variant="secondary"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                const result = await agentsApi.createCredential(organizationId, primaryAgent.agent_id);
-                setRevealedSecret({ agentId: primaryAgent.agent_id, secret: result.secret, prefix: result.prefix });
-                agentDetailQuery.refetch();
-                toast.success("Credential created", "Shown once — copy it now.");
-              } catch (err) {
-                toast.error("Could not create credential", errorMessage(err));
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            {step3Done ? "Rotate credential" : "Create credential"}
-          </Button>
-        )}
-      </StepShell>
-
-      <StepShell index={4} title="Issue an initial grant" status={!step3Done ? "todo" : step4Done ? "done" : "active"}>
-        {step4Done ? (
-          <p className="text-sm text-muted">
-            Root grant issued: up to {formatMoney(grantForAgent!.max_amount_minor)} per action, EUR{" "}
-            {(grantForAgent!.root_budget_limit_minor ?? 0) / 100} daily budget.
-          </p>
-        ) : (
-          <Button
-            disabled={busy || !primaryAgent}
-            onClick={async () => {
-              if (!primaryAgent) return;
-              setBusy(true);
-              try {
-                await grantsApi.create(organizationId, {
-                  environment: "sandbox",
-                  principal_id: userId,
-                  subject_agent_id: primaryAgent.agent_id,
-                  parent_grant_id: null,
-                  allowed_actions: ["refund.create"],
-                  allowed_resource_ids: [],
-                  unrestricted_resources: true,
-                  allowed_connector_ids: ["merchant_sandbox"],
-                  currency: "EUR",
-                  max_amount_minor: 50_000,
-                  root_budget_limit_minor: 100_000,
-                  child_budget_limit_minor: null,
-                  valid_from: null,
-                  expires_at: new Date(Date.now() + 365 * 86_400_000).toISOString(),
-                  delegation_allowed: true,
-                  max_remaining_depth: 3,
-                });
-                grantsQuery.refetch();
-                toast.success("Grant issued", "Up to EUR 500 per refund, EUR 1,000 daily budget.");
-              } catch (err) {
-                toast.error("Could not issue grant", errorMessage(err));
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Issue root grant (up to EUR 500, EUR 1,000/day)
-          </Button>
-        )}
-      </StepShell>
-
-      <StepShell index={5} title="Run your first action" status={!step4Done ? "todo" : step5Done ? "done" : "active"}>
-        {!revealedSecret ? (
-          <p className="text-sm text-muted">
-            The agent&rsquo;s secret is only held in this browser tab&rsquo;s memory. Rotate a new credential above to run an
-            action in this session.
-          </p>
-        ) : (
-          <form
-            className="flex flex-col gap-3"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setBusy(true);
-              setActionError(null);
-              try {
-                const result = await actionsApi.submit(revealedSecret.secret, `onboarding-${Date.now()}`, {
-                  grant_id: grantForAgent!.grant_id,
-                  connector_id: "merchant_sandbox",
-                  action: "refund.create",
-                  resource_id: resourceId,
-                  arguments: { amount_minor: Math.round(Number(amountEuro) * 100), currency: "EUR", reason: "Onboarding test refund" },
-                });
-                setActionResult(result);
-              } catch (err) {
-                setActionError(errorMessage(err));
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Order / resource ID" htmlFor="resource-id">
-                <input id="resource-id" className={inputClass} value={resourceId} onChange={(e) => setResourceId(e.target.value)} />
-              </Field>
-              <Field label="Amount (EUR)" htmlFor="amount">
-                <input id="amount" type="number" min={1} step={1} className={inputClass} value={amountEuro} onChange={(e) => setAmountEuro(e.target.value)} />
-              </Field>
-            </div>
-            <p className="text-xs text-muted">
-              Note: freshly created organizations have no seeded merchant orders yet — run <Mono>pnpm demo:seed</Mono>{" "}
-              for a ready-made org with sample orders, or seed your own via the merchant sandbox. Until then this may
-              correctly deny with <Mono className="mx-1">STATE_UNAVAILABLE</Mono> if <Mono>{resourceId}</Mono> doesn&rsquo;t exist in the sandbox.
-              That is fail-closed behavior working as intended, not a broken flow.
-            </p>
-            <div>
-              <Button type="submit" disabled={busy}>
-                {busy ? "Submitting…" : "Run action"}
-              </Button>
-            </div>
-          </form>
-        )}
-        {actionError && <p className="mt-2 text-sm text-danger">{actionError}</p>}
-        {actionResult && (
-          <div className="mt-3 flex flex-col gap-2 rounded-lg border border-border p-3">
-            <div className="flex items-center gap-2">
-              <DecisionBadge decision={actionResult.decision} />
-              <ExecutionBadge state={actionResult.execution_state} />
-            </div>
-            {actionResult.reason_codes.length > 0 && (
-              <p className="text-xs text-muted">Reason codes: {actionResult.reason_codes.join(", ")}</p>
+                <Field label="Agent name" htmlFor="agent-name">
+                  <input id="agent-name" className={inputClass} value={agentName} onChange={(e) => setAgentName(e.target.value)} required />
+                </Field>
+                <div>
+                  <Button type="submit" disabled={busy}>
+                    {busy ? "Registering…" : "Register agent"}
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <Button onClick={() => setCreatingAgent(true)}>Register an agent</Button>
             )}
-            <Link href={`/actions/${actionResult.action_id}`} className="text-sm font-medium text-accent hover:underline">
-              View action detail →
-            </Link>
-          </div>
-        )}
-      </StepShell>
+          </StepShell>
 
-      {step5Done && (
-        <Card className="border-success/30 bg-success/5 p-5">
-          <p className="text-sm font-medium text-success">Onboarding complete.</p>
-          <p className="mt-1 text-sm text-muted">You can continue to the full dashboard now.</p>
-          <FinishButton />
-        </Card>
-      )}
+          <StepShell index={3} title="Reveal an API key" status={!step2Done ? "todo" : step3Done && !revealedSecret ? "done" : "active"}>
+            {revealedSecret ? (
+              <div className="rounded-lg border border-pending/30 bg-pending/5 p-3">
+                <p className="text-xs font-medium text-pending">
+                  This secret is shown once and cannot be retrieved again. Copy it now.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <Mono className="rounded bg-surface px-2 py-1 border border-border break-all">{revealedSecret.secret}</Mono>
+                  <CopyButton value={revealedSecret.secret} />
+                </div>
+              </div>
+            ) : step3Done ? (
+              <p className="text-sm text-muted">An active credential already exists for this agent. Rotate to reveal a new one if needed.</p>
+            ) : (
+              <p className="text-sm text-muted">Create a credential to authenticate this agent&rsquo;s requests.</p>
+            )}
+            {primaryAgent && (
+              <Button
+                className="mt-3"
+                variant="secondary"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const result = await agentsApi.createCredential(organizationId, primaryAgent.agent_id);
+                    setRevealedSecret({ agentId: primaryAgent.agent_id, secret: result.secret, prefix: result.prefix });
+                    agentDetailQuery.refetch();
+                    toast.success("Credential created", "Shown once — copy it now.");
+                  } catch (err) {
+                    toast.error("Could not create credential", errorMessage(err));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {step3Done ? "Rotate credential" : "Create credential"}
+              </Button>
+            )}
+          </StepShell>
+
+          <StepShell index={4} title="Issue an initial grant" status={!step3Done ? "todo" : step4Done ? "done" : "active"}>
+            {step4Done ? (
+              <p className="text-sm text-muted">
+                Root grant issued: up to {formatMoney(grantForAgent!.max_amount_minor)} per action, EUR{" "}
+                {(grantForAgent!.root_budget_limit_minor ?? 0) / 100} daily budget.
+              </p>
+            ) : (
+              <Button
+                disabled={busy || !primaryAgent}
+                onClick={async () => {
+                  if (!primaryAgent) return;
+                  setBusy(true);
+                  try {
+                    await grantsApi.create(organizationId, {
+                      environment: "sandbox",
+                      principal_id: userId,
+                      subject_agent_id: primaryAgent.agent_id,
+                      parent_grant_id: null,
+                      allowed_actions: ["refund.create"],
+                      allowed_resource_ids: [],
+                      unrestricted_resources: true,
+                      allowed_connector_ids: ["merchant_sandbox"],
+                      currency: "EUR",
+                      max_amount_minor: 50_000,
+                      root_budget_limit_minor: 100_000,
+                      child_budget_limit_minor: null,
+                      valid_from: null,
+                      expires_at: new Date(Date.now() + 365 * 86_400_000).toISOString(),
+                      delegation_allowed: true,
+                      max_remaining_depth: 3,
+                    });
+                    grantsQuery.refetch();
+                    toast.success("Grant issued", "Up to EUR 500 per refund, EUR 1,000 daily budget.");
+                  } catch (err) {
+                    toast.error("Could not issue grant", errorMessage(err));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Issue root grant (up to EUR 500, EUR 1,000/day)
+              </Button>
+            )}
+          </StepShell>
+
+          <StepShell index={5} title="Run your first action" status={!step4Done ? "todo" : step5Done ? "done" : "active"}>
+            {!revealedSecret ? (
+              <p className="text-sm text-muted">
+                The agent&rsquo;s secret is only held in this browser tab&rsquo;s memory. Rotate a new credential above to run an
+                action in this session.
+              </p>
+            ) : (
+              <form
+                className="flex flex-col gap-3"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setBusy(true);
+                  setActionError(null);
+                  try {
+                    const result = await actionsApi.submit(revealedSecret.secret, `onboarding-${Date.now()}`, {
+                      grant_id: grantForAgent!.grant_id,
+                      connector_id: "merchant_sandbox",
+                      action: "refund.create",
+                      resource_id: resourceId,
+                      arguments: { amount_minor: Math.round(Number(amountEuro) * 100), currency: "EUR", reason: "Onboarding test refund" },
+                    });
+                    setActionResult(result);
+                  } catch (err) {
+                    setActionError(errorMessage(err));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Order / resource ID" htmlFor="resource-id">
+                    <input id="resource-id" className={inputClass} value={resourceId} onChange={(e) => setResourceId(e.target.value)} />
+                  </Field>
+                  <Field label="Amount (EUR)" htmlFor="amount">
+                    <input id="amount" type="number" min={1} step={1} className={inputClass} value={amountEuro} onChange={(e) => setAmountEuro(e.target.value)} />
+                  </Field>
+                </div>
+                <p className="text-xs text-muted">
+                  Note: freshly created organizations have no seeded merchant orders yet — run <Mono>pnpm demo:seed</Mono>{" "}
+                  for a ready-made org with sample orders, or seed your own via the merchant sandbox. Until then this may
+                  correctly deny with <Mono className="mx-1">STATE_UNAVAILABLE</Mono> if <Mono>{resourceId}</Mono> doesn&rsquo;t exist in the sandbox.
+                  That is fail-closed behavior working as intended, not a broken flow.
+                </p>
+                <div>
+                  <Button type="submit" disabled={busy}>
+                    {busy ? "Submitting…" : "Run action"}
+                  </Button>
+                </div>
+              </form>
+            )}
+            {actionError && <p className="mt-2 text-sm text-danger">{actionError}</p>}
+            {actionResult && (
+              <div className="mt-3 flex flex-col gap-2 rounded-lg border border-border p-3">
+                <div className="flex items-center gap-2">
+                  <DecisionBadge decision={actionResult.decision} />
+                  <ExecutionBadge state={actionResult.execution_state} />
+                </div>
+                {actionResult.reason_codes.length > 0 && (
+                  <p className="text-xs text-muted">Reason codes: {actionResult.reason_codes.join(", ")}</p>
+                )}
+                <Link href={`/actions/${actionResult.action_id}`} className="text-sm font-medium text-accent hover:underline">
+                  View action detail →
+                </Link>
+              </div>
+            )}
+          </StepShell>
+
+          {step5Done && (
+            <Card className="border-success/30 bg-success/5 p-5">
+              <p className="text-sm font-medium text-success">Onboarding complete.</p>
+              <p className="mt-1 text-sm text-muted">You can continue to the full dashboard now.</p>
+              <FinishButton />
+            </Card>
+          )}
+        </div>
+        <div className="hidden lg:block">
+          <LivePreviewPanel rows={previewRows} />
+        </div>
+      </div>
     </div>
   );
 }

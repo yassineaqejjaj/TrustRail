@@ -43,7 +43,7 @@ export default function AgentsPage() {
                 </Button>
               </Dialog.Trigger>
               <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/40" />
+                <Dialog.Overlay className="fixed inset-0 z-50 bg-sidebar/40" />
                 <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-surface p-5 shadow-lg">
                   <Dialog.Title className="text-base font-semibold text-ink">Register a new agent</Dialog.Title>
                   <CreateAgentForm

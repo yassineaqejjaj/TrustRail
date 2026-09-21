@@ -7,6 +7,13 @@ import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { initials } from "@/lib/format";
 import { Sidebar } from "./Sidebar";
+import { TrustRailMark } from "./TrustRailMark";
+
+function displayName(email: string) {
+  const local = email.split("@")[0] ?? email;
+  const first = local.split(/[._-]/)[0] ?? local;
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
 
 export function Topbar() {
   const { me, orgId, orgName, logout } = useAuth();
@@ -14,22 +21,29 @@ export function Topbar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-surface px-4 md:px-6">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/[0.06] bg-sidebar px-4 md:px-6">
       <div className="flex items-center gap-3">
         <button
-          className="rounded-md p-2 text-muted hover:bg-bg md:hidden"
+          className="rounded-md p-2 text-white/70 hover:bg-white/10 md:hidden"
           aria-label="Open navigation"
           onClick={() => setMobileNavOpen(true)}
         >
           <Menu className="h-5 w-5" />
         </button>
 
-        {me && me.memberships.length > 0 && (
+        <TrustRailMark className="h-5 w-5" />
+        <span className="text-[15px] font-bold tracking-tight text-white">TrustRail</span>
+
+        <span className="inline-flex items-center rounded-full border border-white/[0.16] bg-white/[0.08] px-2.5 py-[3px] text-[11px] font-semibold uppercase tracking-wide text-white/75">
+          Sandbox
+        </span>
+
+        {me && me.memberships.length > 1 && (
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
-              <button className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium text-ink hover:bg-bg">
+              <button className="ml-1 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white">
                 <span className="max-w-[160px] truncate">{orgName ?? "Select organization"}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted" />
+                <ChevronDown className="h-3.5 w-3.5" />
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
@@ -62,20 +76,20 @@ export function Topbar() {
             </DropdownMenu.Portal>
           </DropdownMenu.Root>
         )}
-
-        <span className="inline-flex items-center rounded-full border border-pending/30 bg-pending/10 px-2.5 py-1 text-xs font-medium text-pending">
-          Sandbox
-        </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
+        <a href="/developers" className="hidden text-[13px] text-white/65 hover:text-white sm:inline">
+          Help
+        </a>
         {me && (
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
-              <button className="flex items-center gap-2 rounded-full px-1.5 py-1 hover:bg-bg" aria-label="Account menu">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
+              <button className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-white/10" aria-label="Account menu">
+                <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
                   {initials(me.email)}
                 </span>
+                <span className="hidden text-[13px] text-white sm:inline">{displayName(me.email)}</span>
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
@@ -107,7 +121,7 @@ export function Topbar() {
             <Sidebar />
           </div>
           <button
-            className="flex-1 bg-ink/40"
+            className="flex-1 bg-sidebar/40"
             aria-label="Close navigation"
             onClick={() => setMobileNavOpen(false)}
           />

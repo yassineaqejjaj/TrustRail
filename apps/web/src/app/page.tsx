@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, GitBranch, ShieldCheck, FileCheck2, ShieldHalf } from "lucide-react";
+import { ShieldHalf, GitBranch, ShieldCheck, FileCheck2 } from "lucide-react";
+import { MarketingHeader, MarketingFooter, TrustTimelineCard } from "@/components/marketing";
 
 const CODE_SNIPPET = `import { TrustRail } from "@trustrail/sdk";
 
@@ -48,56 +49,50 @@ const CAPABILITIES = [
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <ShieldHalf className="h-6 w-6 text-accent" />
-            <span className="text-[15px] font-semibold tracking-tight text-ink">TrustRail</span>
-          </div>
-          <nav className="flex items-center gap-3">
-            <a href="#product-preview" className="text-sm font-medium text-muted hover:text-ink">
-              View demo
-            </a>
-            <Link
-              href="/onboarding"
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
-            >
-              Sign in
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <MarketingHeader active="/" />
 
-      <section className="mx-auto max-w-6xl px-6 pb-16 pt-20 text-center">
-        <h1 className="mx-auto max-w-3xl text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-          Let agents act. Keep control.
-        </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-lg text-muted">
-          Set action limits, control delegation, require approval when needed, and verify what happened.
-        </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white hover:bg-accent-hover"
-          >
-            Sign in <ArrowRight className="h-4 w-4" />
-          </Link>
-          <a
-            href="#product-preview"
-            className="rounded-lg border border-border bg-surface px-5 py-2.5 text-sm font-medium text-ink hover:bg-bg"
-          >
-            View demo
-          </a>
+      <section className="bg-glow relative overflow-hidden">
+        <div className="mx-auto grid max-w-6xl gap-16 px-6 pb-24 pt-20 lg:grid-cols-2 lg:items-center lg:pt-28">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-accent shadow-sm">
+              <ShieldHalf className="h-3.5 w-3.5" /> Built for agentic infrastructure
+            </span>
+            <h1 className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight text-ink">
+              Let agents act.
+              <br />
+              Keep control.
+            </h1>
+            <p className="mt-5 max-w-md text-lg text-muted">
+              Set action limits, control delegation, require approval when needed, and verify what happened.
+            </p>
+            <div className="mt-8 flex items-center gap-3">
+              <Link
+                href="/onboarding"
+                className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white hover:bg-accent-hover"
+              >
+                Get started
+              </Link>
+              <Link
+                href="/docs"
+                className="rounded-full border border-border bg-surface px-6 py-3 text-sm font-semibold text-ink hover:bg-bg"
+              >
+                View docs
+              </Link>
+            </div>
+            <p className="mt-4 text-xs text-muted">
+              Every amount shown here is synthetic sandbox money. No real funds move in this product today.
+            </p>
+          </div>
+          <div className="flex justify-center lg:justify-end">
+            <TrustTimelineCard />
+          </div>
         </div>
-        <p className="mt-4 text-xs text-muted">
-          Every amount shown here is synthetic sandbox money. No real funds move in this product today.
-        </p>
       </section>
 
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <div className="grid gap-6 sm:grid-cols-3">
           {CAPABILITIES.map((cap) => (
-            <div key={cap.title} className="rounded-xl border border-border bg-surface p-6 shadow-card">
+            <div key={cap.title} className="glass p-6">
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
                 <cap.icon className="h-5 w-5" />
               </div>
@@ -161,12 +156,7 @@ export default function LandingPage() {
         </pre>
       </section>
 
-      <footer className="border-t border-border bg-surface py-8">
-        <div className="mx-auto max-w-6xl px-6 text-center text-xs text-muted">
-          <p>TrustRail is an in-development product. No customers, revenue, or independent audit are claimed.</p>
-          <p className="mt-1">All demo amounts are synthetic sandbox money.</p>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }
