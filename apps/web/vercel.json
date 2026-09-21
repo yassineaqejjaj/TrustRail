@@ -1,0 +1,4 @@
+{
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @trustrail/contracts run build && pnpm --filter @trustrail/web run build"
+}
