@@ -1,0 +1,91 @@
+import Fastify, { type FastifyInstance } from "fastify";
+import cookie from "@fastify/cookie";
+import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
+import sensible from "@fastify/sensible";
+import type { Db } from "./db/client.js";
+import type { AppConfig } from "./config.js";
+import { parseJsonStrict, StrictJsonError } from "./http/strictJson.js";
+import { registerHealthRoutes } from "./routes/health.js";
+import { registerAuthRoutes } from "./routes/auth.js";
+import { registerOrganizationRoutes } from "./routes/organizations.js";
+import { registerMeRoutes } from "./routes/me.js";
+import { registerAgentRoutes } from "./routes/agents.js";
+import { registerGrantRoutes } from "./routes/grants.js";
+import { registerPolicyRoutes } from "./routes/policies.js";
+import { registerActionRoutes } from "./routes/actions.js";
+import { registerApprovalRoutes } from "./routes/approvals.js";
+import { registerReceiptRoutes } from "./routes/receipts.js";
+import { registerSimulationRoutes } from "./routes/simulations.js";
+import { registerMetricsRoutes } from "./routes/metrics.js";
+import { registerEventRoutes } from "./routes/events.js";
+import type { SubmitActionDeps } from "./gateway/submitAction.js";
+import type { ApprovalDecisionDeps } from "./gateway/approvalResume.js";
+import type { Connector } from "./gateway/connector.js";
+
+export interface BuildAppOptions {
+  db: Db;
+  config: AppConfig;
+  connector: Connector;
+  gatewayDeps: SubmitActionDeps & ApprovalDecisionDeps;
+}
+
+const BODY_LIMIT_BYTES = 256 * 1024;
+
+export function buildApp(opts: BuildAppOptions): FastifyInstance {
+  const app = Fastify({
+    logger: opts.config.NODE_ENV !== "test",
+    bodyLimit: BODY_LIMIT_BYTES,
+    genReqId: () => `req_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`,
+  });
+
+  void app.register(sensible);
+  void app.register(cookie);
+  void app.register(cors, {
+    origin: opts.config.CORS_ORIGIN,
+    credentials: true,
+  });
+  void app.register(rateLimit, { global: false });
+
+  // Custom strict JSON parser: rejects duplicate keys (spec section 6) and
+  // caps payload size explicitly rather than relying only on bodyLimit's
+  // generic error shape.
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+    try {
+      const parsed = body.length > 0 ? parseJsonStrict(body as string) : undefined;
+      done(null, parsed);
+    } catch (err) {
+      if (err instanceof StrictJsonError) {
+        const wrapped = new Error(err.message) as Error & { statusCode: number };
+        wrapped.statusCode = 400;
+        done(wrapped, undefined);
+        return;
+      }
+      done(err as Error, undefined);
+    }
+  });
+
+  app.setErrorHandler((err, req, reply) => {
+    if ((err as { statusCode?: number }).statusCode === 400) {
+      return reply.code(400).send({ code: "BAD_REQUEST", message: (err as Error).message, request_id: req.id });
+    }
+    req.log.error(err);
+    return reply.code(500).send({ code: "INTERNAL_ERROR", message: "an internal error occurred", request_id: req.id });
+  });
+
+  registerHealthRoutes(app, opts.db);
+  registerAuthRoutes(app, opts.db, opts.config);
+  registerOrganizationRoutes(app, opts.db);
+  registerMeRoutes(app, opts.db);
+  registerAgentRoutes(app, opts.db);
+  registerGrantRoutes(app, opts.db);
+  registerPolicyRoutes(app, opts.db);
+  registerActionRoutes(app, opts.db, opts.gatewayDeps);
+  registerApprovalRoutes(app, opts.db, opts.gatewayDeps);
+  registerReceiptRoutes(app, opts.db);
+  registerSimulationRoutes(app, opts.db, opts.connector);
+  registerMetricsRoutes(app, opts.db);
+  registerEventRoutes(app, opts.db);
+
+  return app;
+}

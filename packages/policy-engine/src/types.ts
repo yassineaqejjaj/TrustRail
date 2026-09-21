@@ -14,6 +14,10 @@ export interface GrantChainLink {
   allowedConnectorIds: string[];
   currency: Currency;
   maxAmountMinor: number;
+  /** Only meaningful on the root grant (index 0 of the chain). */
+  rootBudgetLimitMinor: number | null;
+  /** Only meaningful on non-root grants; a sub-budget scoped to this grant and its descendants. */
+  childBudgetLimitMinor: number | null;
   validFrom: string | null; // ISO
   expiresAt: string | null; // ISO
   delegationAllowed: boolean;

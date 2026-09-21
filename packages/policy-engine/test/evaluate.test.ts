@@ -20,6 +20,8 @@ function rootGrant(overrides: Partial<GrantChainLink> = {}): GrantChainLink {
     allowedConnectorIds: ["conn_merchant0000000000001"],
     currency: "EUR",
     maxAmountMinor: 50_000,
+    rootBudgetLimitMinor: 100_000,
+    childBudgetLimitMinor: null,
     validFrom: null,
     expiresAt: "2026-12-31T00:00:00Z",
     delegationAllowed: true,
