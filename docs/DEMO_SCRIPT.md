@@ -42,6 +42,26 @@ Sign in to the dashboard as `owner@northstar.demo` (password printed by
   *exceeding* its granted authority; it cannot stop misuse *within* that
   authority until a human revokes it.
 
+## Timing rehearsal (2026-09-21)
+
+The five underlying scenarios were run for real, in the order the script uses
+them, against a freshly seeded stack (`pnpm demo:seed` then `pnpm demo:run
+<scenario>`), to confirm the 90-second budget is realistic and not aspirational:
+
+| Scenario | Wall time | Result |
+|---|---|---|
+| `eur80_auto_refund` | 1.60s | PASS (ALLOW, succeeded) |
+| `eur700_denied` | 1.20s | PASS (denied before reaching the merchant) |
+| `eur350_approval` | 0.87s | PASS (submitted + approved by an independent reviewer) |
+| `receipt_tamper_detected` | 1.57s | PASS (original verifies, tampered copy fails) |
+| `root_revoked_denied` | 1.33s | PASS (revoke, denied dispatch, grant restored) |
+
+Total CLI execution time across all five: ~6.6 seconds, against a 65-second
+on-script budget (15s–80s) — the script's pacing is dominated by narration
+and dashboard clicks, not computation, so the timing in the table above is
+achievable live. This was **not** yet done as an actual recorded take with a
+presenter narrating out loud; that remains the one open item for V14.
+
 ## Backup footage
 
 If recording live demo runs is impractical for a given audience, prerecorded

@@ -1,6 +1,6 @@
 # TrustRail V1 build status
 
-Last updated: 2026-09-21 (session 1)
+Last updated: 2026-09-21 (session 2)
 
 Legend: `done` = implemented and covered by a passing test that was actually run. `partial` = implemented but missing a required test/edge case or polish. `todo` = not started.
 
@@ -27,7 +27,7 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 | V11 | TypeScript and Python SDKs | done | Both expose `actions.execute/get/wait`, `grants.delegate`, `receipts.get/verify` against the same live API. TypeScript: 6 unit tests (mocked fetch) covering idempotency-key retry semantics. Python: 9 tests — 3 canonicalization, 3 cross-language receipt verification, 3 against a real spawned live API instance (not mocked). |
 | V12 | MCP tool adapter | done | `get_order`, `request_refund`, `get_action_status` over stdio, built on `@modelcontextprotocol/sdk`. Verified with a **real MCP client** driving the actual built binary as a subprocess against a real running stack (5/5 tests): tool listing, real order lookup, real EUR 80 refund, EUR 700 denial, cross-checked action status. |
 | V13 | Developer docs and local setup | done | README, ARCHITECTURE, THREAT_MODEL, API, SDK_QUICKSTART, MCP_SETUP, OPERATIONS, TEST_REPORT, DEMO_SCRIPT, YC_PRODUCT_BRIEF, ROADMAP, DECISIONS all written from what was actually built. `pnpm setup:local`/`dev`/`demo:seed`/`demo:run`/`demo:reset`/`verify`/`benchmark` all implemented and run for real (see `docs/TEST_REPORT.md`). No generated OpenAPI file yet — `docs/API.md` is hand-maintained. |
-| V14 | YC demo materials and landing page | partial | `docs/DEMO_SCRIPT.md` and `docs/YC_PRODUCT_BRIEF.md` written. Landing page built and verified live (no fake logos/testimonials, honest sandbox disclaimer). Materials not yet rehearsed as an actual timed recording. |
+| V14 | YC demo materials and landing page | partial | `docs/DEMO_SCRIPT.md` and `docs/YC_PRODUCT_BRIEF.md` written. Landing page built and verified live (no fake logos/testimonials, honest sandbox disclaimer). The script's five underlying scenarios were run live, in order, against a freshly-seeded stack and timed for real (~6.6s of CLI execution against a 65s on-script budget) — see `docs/DEMO_SCRIPT.md`'s "Timing rehearsal" section. Still not done: an actual recorded take with a human presenter narrating live. |
 | V15 | Observability and deployment package | partial | Health checks, structured logging (pino), and `/v1/metrics/summary` (real measured aggregates, including authorization latency p50/p95/p99) all implemented and shown in the dashboard's Overview page. `docs/OPERATIONS.md` written (runbook, key rotation, restore guidance). Dockerfiles (`apps/api`, `apps/merchant-sandbox`, `apps/web`), `infra/docker-compose.yml`, and `.github/workflows/ci.yml` are now written — reviewed for architectural correctness (no published merchant-sandbox port, one-shot migrate service gating `api`'s startup, shared signing-key volume) but **not executed**, since this machine has no Docker/CI runner access. Treat them as a reviewed starting point to debug on first real use, not a finished artifact. |
 
 ## Phase gates (spec §17)
@@ -61,4 +61,16 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 
 ## Session log
 
-- 2026-09-21: Full session. Built and integration-tested, in order: repo scaffolding + contracts/policy-engine/receipt-verifier (Phase 1); merchant-sandbox with real concurrency-safe refunds; apps/api's complete gateway (auth, grants, policies, actions, approvals, receipts, RLS-based tenant isolation) with 25 passing integration tests (Phase 2/3); `pnpm setup:local`/`pnpm dev` scripts, verified live via curl; the full 12-scenario deterministic demo lab, verified twice from clean state (Phase 3/6); the TypeScript SDK, a read-only order-lookup route it needed, the MCP adapter (verified with a real MCP client), and the Python SDK (verified against a real live API and cross-language against the TS signer) (Phase 5); the complete documentation set and `pnpm verify`/`pnpm benchmark` scripts; the Next.js dashboard (built in a parallel isolated agent session, merged, then verified live in-browser end to end, fixing a stale/broken demo-scenario-id mismatch and an HTML-entity-in-JS-string rendering bug found during that verification) (Phase 4). 96+ automated tests passing across 8 packages, plus live manual verification of every major user-facing flow.
+- 2026-09-21 (session 2): Re-verified the full baseline (`git status` clean,
+  `pnpm verify` all green). Confirmed no Docker/CI runner is available on
+  this machine (`docker`/`docker compose` not installed), so V15's
+  Docker/CI gap remains genuinely blocked by the environment, not by
+  missing code. Closed the other open V14 item that was actually
+  achievable here: started a fresh local stack, seeded it, and ran the
+  demo script's five named scenarios in order for real, timing each one
+  (see `docs/DEMO_SCRIPT.md`'s "Timing rehearsal" section) to confirm the
+  90-second script's pacing is realistic. Shut the rehearsal stack down
+  cleanly afterward. Also found and cleaned up an orphaned `pnpm dev`
+  process left running from the already-merged and removed frontend-agent
+  git worktree (harmless — it held no listening ports — but tidied up).
+- 2026-09-21 (session 1): Full session. Built and integration-tested, in order: repo scaffolding + contracts/policy-engine/receipt-verifier (Phase 1); merchant-sandbox with real concurrency-safe refunds; apps/api's complete gateway (auth, grants, policies, actions, approvals, receipts, RLS-based tenant isolation) with 25 passing integration tests (Phase 2/3); `pnpm setup:local`/`pnpm dev` scripts, verified live via curl; the full 12-scenario deterministic demo lab, verified twice from clean state (Phase 3/6); the TypeScript SDK, a read-only order-lookup route it needed, the MCP adapter (verified with a real MCP client), and the Python SDK (verified against a real live API and cross-language against the TS signer) (Phase 5); the complete documentation set and `pnpm verify`/`pnpm benchmark` scripts; the Next.js dashboard (built in a parallel isolated agent session, merged, then verified live in-browser end to end, fixing a stale/broken demo-scenario-id mismatch and an HTML-entity-in-JS-string rendering bug found during that verification) (Phase 4). 96+ automated tests passing across 8 packages, plus live manual verification of every major user-facing flow.
