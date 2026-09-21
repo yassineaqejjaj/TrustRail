@@ -2,6 +2,8 @@ import { loadEnvIntoProcess } from "./lib/env.js";
 import { startLocalPostgres, stopLocalPostgres, isInitialised } from "./lib/localPostgres.js";
 import { getDb, closePool } from "../apps/api/src/db/client.js";
 import { seedNorthstarCommerce, DEMO_PASSWORD } from "../apps/api/src/demo/seedNorthstar.js";
+import { getDb as getMerchantDb, closePool as closeMerchantPool } from "../apps/merchant-sandbox/src/db/client.js";
+import { seedMerchantSandbox } from "../apps/merchant-sandbox/src/seed.js";
 import { DEMO_USERS } from "@trustrail/contracts";
 
 async function main() {
@@ -15,7 +17,11 @@ async function main() {
     const db = getDb();
     const result = await seedNorthstarCommerce(db);
 
-    console.log("\n== Northstar Commerce demo seeded ==");
+    const merchantDb = getMerchantDb();
+    await seedMerchantSandbox(merchantDb, result.organizationId);
+    await closeMerchantPool();
+
+    console.log("\n== Northstar Commerce demo seeded (including synthetic merchant orders) ==");
     console.log(`organization_id: ${result.organizationId}\n`);
     console.log("Sign in at the dashboard with any of these (password is the same for all):");
     for (const [key, def] of Object.entries(DEMO_USERS)) {

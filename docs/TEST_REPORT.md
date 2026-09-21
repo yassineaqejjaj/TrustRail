@@ -55,6 +55,27 @@ Postgres/merchant-sandbox process churn in that ad hoc test methodology, not
 a correctness bug — see `docs/BUILD_STATUS.md`'s decision log for the
 investigation. Every clean, isolated run has been consistent.)
 
+## Example agents (`examples/support-agent-ts`, `examples/support-agent-python`)
+
+Both run without any LLM provider (see each one's module docstring). Ran
+both for real against the live local stack:
+
+```
+$ pnpm --filter support-agent-ts-example run start
+Requesting a EUR 80.00 refund on order_demo_101...
+Execution state: succeeded, connector reference: refund_miq8EkHx5RDexT87q3huCJob
+
+$ sdk/python/.venv/bin/python examples/support-agent-python/support_agent.py
+Requesting a EUR 80.00 refund on order_demo_106...
+Execution state: succeeded, connector reference: refund_RtHTkfq3zLsm4CVCGnJtUvqi
+```
+
+This run surfaced a real gap: `pnpm demo:seed` seeded TrustRail-side
+fixtures (org/users/agents/grants/policy) but not merchant-sandbox orders,
+so a fresh example run correctly failed closed with `STATE_UNAVAILABLE`
+until `demo:seed` was fixed to also seed merchant orders (matching what a
+user would actually expect from a single "seed the demo" command).
+
 ## Manual live verification (not automated, done once by hand)
 
 - `pnpm setup:local` run twice consecutively — second run correctly detected
@@ -64,10 +85,19 @@ investigation. Every clean, isolated run has been consistent.)
   organization, create agent, create credential, issue a root grant, submit
   a real EUR 80.00 refund — received `decision: ALLOW`, `execution_state:
   succeeded`, a real `connector_reference`, and two receipts.
-- Frontend (`apps/web`) manual click-through: see the frontend build
-  agent's own report for what was clicked through live versus only
-  typechecked, once merged — not yet reflected in this file as of this
-  writing (see `docs/BUILD_STATUS.md`).
+- Frontend (`apps/web`): built in a parallel isolated session, then
+  merged and independently re-verified live in-browser after merging:
+  production build (all 15 routes), lint (0 warnings/errors after fixing
+  several found on the first real lint run -- ESLint wasn't configured
+  yet, so this was the first time `next lint` had actually run against
+  this code), and a live click-through covering sign-in, the onboarding
+  checklist reflecting real seeded state, the Overview page showing real
+  measured metrics after running a demo scenario via CLI, the Demo Lab
+  page successfully running a scenario through its "Run scenario" button
+  (which required fixing a scenario-ID mismatch and an HTML-entity
+  rendering bug between the two independently-built halves), the
+  Approvals page showing that scenario's real approval history, and the
+  Receipts page's paste-to-verify tool.
 
 ## Benchmark (`pnpm benchmark`)
 

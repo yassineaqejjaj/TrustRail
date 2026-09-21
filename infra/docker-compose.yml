@@ -1,0 +1,126 @@
+# docker compose up --build
+#
+# NOT executed on the machine this repo was built on (no Docker available
+# there -- see docs/DECISIONS.md and docs/BUILD_STATUS.md). This is a
+# reviewed, architecturally-correct starting point -- expect to debug real
+# issues the first time it actually runs, and update BUILD_STATUS.md with
+# the result once someone does.
+#
+# Run from the repository root: `docker compose -f infra/docker-compose.yml up --build`
+#
+# Key properties this file is responsible for maintaining:
+# - merchant-sandbox has NO published host port -- only `api`, on the
+#   internal compose network, can reach it. Do not add a `ports:` entry
+#   for it.
+# - Migrations (including RLS policy application and the two-role split)
+#   run as a one-shot `migrate` service that must complete successfully
+#   before `api` starts.
+# - The Ed25519 signing key is generated once into a named volume shared
+#   between `migrate` and `api`, never baked into an image layer.
+
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set a strong POSTGRES_SUPERUSER_PASSWORD in .env}
+      POSTGRES_DB: postgres
+    volumes:
+      - trustrail-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [trustrail-internal]
+    # No published port: Postgres is reachable only from other compose
+    # services. Expose it to the host only for local debugging, never in a
+    # shared/production deployment.
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+      target: build
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_SUPERUSER_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      TRUSTRAIL_MIGRATOR_PASSWORD: ${TRUSTRAIL_MIGRATOR_PASSWORD:?}
+      TRUSTRAIL_APP_PASSWORD: ${TRUSTRAIL_APP_PASSWORD:?}
+    volumes:
+      - trustrail-keys:/keys
+    working_dir: /app
+    command: ["node", "apps/api/dist/db/bootstrapAndMigrate.docker.js"]
+    networks: [trustrail-internal]
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      APP_MODE: ${APP_MODE:-demo}
+      PORT: "4000"
+      HOST: "0.0.0.0"
+      APP_DATABASE_URL: postgres://trustrail_app:${TRUSTRAIL_APP_PASSWORD}@postgres:5432/trustrail
+      MERCHANT_SANDBOX_URL: http://merchant-sandbox:4100
+      GATEWAY_SHARED_SECRET: ${GATEWAY_SHARED_SECRET:?}
+      RECEIPT_ISSUER: trustrail
+      SIGNING_KEYS_DIR: /keys
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      SESSION_COOKIE_SECURE: "true"
+    volumes:
+      - trustrail-keys:/keys
+    ports:
+      - "4000:4000"
+    networks: [trustrail-internal]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  merchant-sandbox:
+    build:
+      context: ..
+      dockerfile: apps/merchant-sandbox/Dockerfile
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: "4100"
+      HOST: "0.0.0.0"
+      MERCHANT_DATABASE_URL: postgres://trustrail_migrator:${TRUSTRAIL_MIGRATOR_PASSWORD}@postgres:5432/trustrail_merchant
+      GATEWAY_SHARED_SECRET: ${GATEWAY_SHARED_SECRET:?}
+    networks: [trustrail-internal]
+    # Deliberately no `ports:` -- see the file header comment.
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
+    depends_on: [api]
+    environment:
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    networks: [trustrail-internal]
+
+networks:
+  trustrail-internal:
+    driver: bridge
+
+volumes:
+  trustrail-pgdata:
+  trustrail-keys:

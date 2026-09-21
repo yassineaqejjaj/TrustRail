@@ -1,0 +1,46 @@
+# NOT executed on the machine this repo was built on (no CI runner access
+# there). Reviewed against the actual commands used throughout this build
+# (docs/TEST_REPORT.md) but not confirmed green on an actual GitHub Actions
+# run -- see docs/BUILD_STATUS.md.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build, typecheck, lint, test every TypeScript package/app
+        run: pnpm -r --filter='./packages/*' --filter='./apps/*' run build
+      - run: pnpm -r --filter='./packages/*' --filter='./apps/*' run typecheck
+      - run: pnpm -r --filter='./packages/*' --filter='./apps/*' run lint
+      - run: pnpm -r --filter='./packages/*' --filter='./apps/*' run test
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Python SDK tests
+        working-directory: sdk/python
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -e ".[dev]"
+          pytest
