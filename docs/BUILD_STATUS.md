@@ -1,13 +1,13 @@
 # TrustRail V1 build status
 
-Last updated: 2026-09-21 (session 3)
+Last updated: 2026-09-21 (session 4)
 
 Legend: `done` = implemented and covered by a passing test that was actually run. `partial` = implemented but missing a required test/edge case or polish. `todo` = not started.
 
 ## Environment notes
 
 - No Homebrew / system Postgres on the build machine. Using `embedded-postgres` (real Postgres 18 binaries, no Docker needed) for both local dev (`pnpm setup:local`/`pnpm dev`, persistent) and every test suite (ephemeral, one instance per run). See `docs/DECISIONS.md`.
-- Docker Desktop became available partway through the build (2026-09-21, session 3). `docker compose -f infra/docker-compose.yml up --build` has now actually been run end-to-end — see V15 above and `docs/DECISIONS.md` for the three real bugs it surfaced and fixed. A GitHub Actions runner is still not available from this machine, so `.github/workflows/ci.yml` remains unexecuted.
+- Docker Desktop became available partway through the build (2026-09-21, session 3). `docker compose -f infra/docker-compose.yml up --build` has now actually been run end-to-end — see V15 above and `docs/DECISIONS.md` for the three real bugs it surfaced and fixed. The repository was then pushed to `yassineaqejjaj/trustrail` on GitHub (private), giving `.github/workflows/ci.yml` a real Actions run too — see the session 4 log entry below.
 - `pnpm verify` (build+typecheck+lint+test across every package, plus Python) is wired (`scripts/verify.ts`) and passes end to end — see `docs/TEST_REPORT.md`.
 
 ## Requirement checklist (V01–V15)
@@ -28,7 +28,7 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 | V12 | MCP tool adapter | done | `get_order`, `request_refund`, `get_action_status` over stdio, built on `@modelcontextprotocol/sdk`. Verified with a **real MCP client** driving the actual built binary as a subprocess against a real running stack (5/5 tests): tool listing, real order lookup, real EUR 80 refund, EUR 700 denial, cross-checked action status. |
 | V13 | Developer docs and local setup | done | README, ARCHITECTURE, THREAT_MODEL, API, SDK_QUICKSTART, MCP_SETUP, OPERATIONS, TEST_REPORT, DEMO_SCRIPT, YC_PRODUCT_BRIEF, ROADMAP, DECISIONS all written from what was actually built. `pnpm setup:local`/`dev`/`demo:seed`/`demo:run`/`demo:reset`/`verify`/`benchmark` all implemented and run for real (see `docs/TEST_REPORT.md`). No generated OpenAPI file yet — `docs/API.md` is hand-maintained. |
 | V14 | YC demo materials and landing page | partial | `docs/DEMO_SCRIPT.md` and `docs/YC_PRODUCT_BRIEF.md` written. Landing page built and verified live (no fake logos/testimonials, honest sandbox disclaimer). The script's five underlying scenarios were run live, in order, against a freshly-seeded stack and timed for real (~6.6s of CLI execution against a 65s on-script budget) — see `docs/DEMO_SCRIPT.md`'s "Timing rehearsal" section. Still not done: an actual recorded take with a human presenter narrating live. |
-| V15 | Observability and deployment package | done | Health checks, structured logging (pino), and `/v1/metrics/summary` (real measured aggregates, including authorization latency p50/p95/p99) all implemented and shown in the dashboard's Overview page. `docs/OPERATIONS.md` written (runbook, key rotation, restore guidance). `docker compose -f infra/docker-compose.yml up --build` was actually run end-to-end on 2026-09-21 once Docker Desktop became available on this machine: `postgres`, `migrate`, `api`, `merchant-sandbox`, and `web` all started healthy, and a full live flow (register, create org, create agent + credential, issue a grant, run `eur80_auto_refund`/`eur700_denied`/`receipt_tamper_detected`/`direct_merchant_write_rejected`) succeeded against the real containers, including an independently-verified signed receipt (`signature_valid: true`, `issuer_trusted: true`). `merchant-sandbox`'s network isolation was verified directly, not just reviewed: a connection attempt from the host to its port is refused outright (no published port at all). Three real bugs were found and fixed by this run (see `docs/DECISIONS.md`): a `postgres:18-alpine` volume-layout incompatibility, a missing `tsconfig.base.json` in each Dockerfile's build context, and a signing-key file-permission mismatch between the root-run `migrate` service and the non-root `api` service. `.github/workflows/ci.yml` still has not been run against a real CI runner (no GitHub Actions access from this machine) — that remains the one genuinely unexecuted piece. |
+| V15 | Observability and deployment package | done | Health checks, structured logging (pino), and `/v1/metrics/summary` (real measured aggregates, including authorization latency p50/p95/p99) all implemented and shown in the dashboard's Overview page. `docs/OPERATIONS.md` written (runbook, key rotation, restore guidance). `docker compose -f infra/docker-compose.yml up --build` was actually run end-to-end on 2026-09-21 once Docker Desktop became available on this machine: `postgres`, `migrate`, `api`, `merchant-sandbox`, and `web` all started healthy, and a full live flow (register, create org, create agent + credential, issue a grant, run `eur80_auto_refund`/`eur700_denied`/`receipt_tamper_detected`/`direct_merchant_write_rejected`) succeeded against the real containers, including an independently-verified signed receipt (`signature_valid: true`, `issuer_trusted: true`). `merchant-sandbox`'s network isolation was verified directly, not just reviewed: a connection attempt from the host to its port is refused outright (no published port at all). Three real bugs were found and fixed by this run (see `docs/DECISIONS.md`): a `postgres:18-alpine` volume-layout incompatibility, a missing `tsconfig.base.json` in each Dockerfile's build context, and a signing-key file-permission mismatch between the root-run `migrate` service and the non-root `api` service. The repository was then pushed to `yassineaqejjaj/trustrail` on GitHub, which gave `.github/workflows/ci.yml` its first real execution on an actual Actions runner — it failed once (`pnpm/action-setup@v4` vs. `package.json`'s `packageManager` field, see `docs/DECISIONS.md`), was fixed, and the `verify` job then passed in full (build/typecheck/lint/test, Python SDK tests, and the 4-spec Playwright suite) in 3m29s on a real `ubuntu-latest` runner. Nothing in the deployment package remains unexecuted. |
 
 ## Phase gates (spec §17)
 
@@ -39,7 +39,7 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 | 3. Review and evidence | Reviewer completes EUR 350 workflow; altered receipt fails; replay cannot duplicate execution | **met** — covered by `gateway.integration.test.ts`, the demo scenario suite, and live browser verification (see V06/V08 above). |
 | 4. Product interface | Required browser flows work with real persistent data, including failure states | **met**. All 13 pages built, production build/lint/typecheck clean, a real manual click-through session, and a real automated Playwright suite (`tests/e2e`, spec section 16's exact five flows: onboarding, first refund, denial explanation, independent reviewer approval, receipt verification) -- 4/4 specs passing, each against a freshly-provisioned real backend (own ephemeral Postgres, own merchant sandbox, own `next dev` instance). |
 | 5. Developer adoption | Both SDKs + MCP adapter work without private knowledge | **met**. Both SDKs and the MCP adapter tested against a real running API (not mocks for the integration-level checks); `docs/SDK_QUICKSTART.md` and `docs/MCP_SETUP.md` document the exact steps. |
-| 6. YC presentation | Clean checkout passes documented verification; demo repeatable | **substantially met**. `pnpm verify` passes; `pnpm demo:run` is repeatable (verified twice from clean state, and again inside the Docker Compose stack); demo script timed for real and product brief written. Docker Compose now actually run end-to-end (see V15). Not yet done: an actual recorded take of the 90-second script with a human presenter, and a real CI runner execution. |
+| 6. YC presentation | Clean checkout passes documented verification; demo repeatable | **met**. `pnpm verify` passes locally; a real GitHub Actions run of the same checks plus the Playwright suite passes on a clean checkout (`yassineaqejjaj/trustrail`, run 35592712208); `pnpm demo:run` is repeatable (verified from clean state, and again inside the Docker Compose stack); demo script timed for real and product brief written. Not yet done: an actual recorded take of the 90-second script with a human presenter narrating live -- the one item in the whole spec that requires a human, not more engineering. |
 
 ## Known simplifications (honest limitations, not to be silently papered over)
 
@@ -48,7 +48,7 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 - **apps/worker is a thin wrapper**: the actual polling/dispatch logic lives in `apps/api/src/worker/poller.ts`, imported via a relative path rather than a shared package. Documented in `docs/DECISIONS.md`.
 - **SSE (`GET /v1/events`)** is tenant-scoped short-interval polling of `audit_events`, not a push-based bus.
 - **Worker has no elevated DB role**: it iterates the global `organizations` table and opens one tenant-scoped transaction per org per poll tick. Fine at demo scale; an O(orgs) scaling limit.
-- **`.github/workflows/ci.yml` is written but unexecuted** — this machine has no GitHub Actions runner access, so the CI workflow has never actually run, even though `apps/*/Dockerfile` and `infra/docker-compose.yml` now have been (see V15). It mirrors `pnpm verify`'s steps closely enough that a first real run is a reasonable bet, but "reasonable bet" is not the same as verified.
+- **(Resolved 2026-09-21)** `.github/workflows/ci.yml` has now been run for real on `yassineaqejjaj/trustrail` and passes. It was not a formality the first time either — it failed once on a `pnpm/action-setup@v4` version-conflict check, fixed in the same session (`docs/DECISIONS.md`).
 - **One minor frontend/backend seam found during integration, not fixed**: no `GET /v1/receipts` list endpoint (Receipts page works around this by deriving its list from recent actions' embedded receipt refs). `agents.last_activity_at` was the other one found; it's fixed now (`apps/api/src/auth/context.ts#authenticateAgent`, test-covered).
 
 ## Continuation checklist (if a future session resumes this build)
@@ -57,10 +57,25 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 2. `pnpm install`, then `pnpm --filter='./packages/*' --filter='./apps/*' run build`.
 3. `pnpm setup:local && pnpm dev` to run the full stack locally; `pnpm demo:seed` then `pnpm demo:run <scenario>` to exercise it.
 4. `pnpm verify` should pass in full (96+ tests across 8 packages as of this writing) before making changes, to confirm the baseline still holds.
-5. Highest-leverage remaining work, in order: (a) an actual GitHub Actions run of `.github/workflows/ci.yml` once a runner is available; (b) an actual recorded take of the 90-second demo script with a human presenter narrating; (c) the rest of `docs/ROADMAP.md`'s engineering follow-ups.
+5. Highest-leverage remaining work, in order: (a) an actual recorded take of the 90-second demo script with a human presenter narrating -- the one remaining item that isn't an engineering task; (b) the rest of `docs/ROADMAP.md`'s engineering follow-ups.
 
 ## Session log
 
+- 2026-09-21 (session 4): Created `yassineaqejjaj/trustrail` (private) on
+  GitHub and pushed `main` (20 commits at push time). This gave
+  `.github/workflows/ci.yml` its first execution on a real Actions
+  runner, which failed immediately on `pnpm/action-setup@v4` (a version
+  specified both there and in `package.json`'s `packageManager` field,
+  which a newer release of that action now rejects even when the two
+  agree). Fixed and re-pushed; the `verify` job then passed in full
+  (build, typecheck, lint, unit/integration tests, Python SDK tests, and
+  the 4-spec Playwright e2e suite) in 3m29s on `ubuntu-latest` (run
+  35592712208). This closes the one item in the entire V01-V15 checklist
+  that had remained genuinely unexecuted rather than just reviewed --
+  every mandatory capability now has real, executed evidence. The only
+  thing left in `docs/ROADMAP.md`/this file that isn't done is a human
+  presenter actually recording the 90-second demo script live, which by
+  its nature isn't something to automate.
 - 2026-09-21 (session 3): Docker Desktop became available on this machine.
   Ran `docker compose -f infra/docker-compose.yml --env-file infra/.env up
   --build` for the first time and treated it as the debugging session

@@ -95,12 +95,12 @@ actual results — not a claim, a report of what was executed.
 
 ## Deployment status
 
-**Local development and a Docker Compose deployment are both verified.**
+**Local development, Docker Compose, and CI are all verified for real.**
 `docker compose -f infra/docker-compose.yml --env-file infra/.env up --build`
 has been run end-to-end against real containers, including a live
 register → org → agent → grant → refund flow and independent receipt
-verification — see `docs/BUILD_STATUS.md`'s V15 entry and
-`docs/DECISIONS.md` for the real bugs that run found and fixed. Production
-deployment guidance is in `docs/OPERATIONS.md`. The one piece still
-genuinely unexecuted is `.github/workflows/ci.yml` against a real GitHub
-Actions runner (no such access from this machine).
+verification, and `.github/workflows/ci.yml` has passed on a real GitHub
+Actions runner against [`yassineaqejjaj/trustrail`](https://github.com/yassineaqejjaj/trustrail)
+— see `docs/BUILD_STATUS.md`'s V15 entry and `docs/DECISIONS.md` for the
+real bugs both of those first runs found and fixed. Production deployment
+guidance is in `docs/OPERATIONS.md`.

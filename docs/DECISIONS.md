@@ -111,7 +111,11 @@ treats specifying a version in both places as an error (`ERR_PNPM_BAD_PM_VERSION
 guard), even when the versions don't actually conflict. Fixed by dropping
 the redundant `version:` input and letting the action read
 `packageManager` instead, which is also more correct going forward (only
-one source of truth for the pinned version). Re-ran after the fix -- see
-`docs/TEST_REPORT.md`/`docs/BUILD_STATUS.md` for the result. This was the
-one deployment-package piece that had remained genuinely unverified; it no
-longer is.
+one source of truth for the pinned version). Re-ran after the fix: the
+`verify` job passed in full (build, typecheck, lint, unit/integration
+tests, Python SDK tests, and the 4-spec Playwright e2e suite) in 3m29s on
+a real `ubuntu-latest` GitHub Actions runner
+(https://github.com/yassineaqejjaj/trustrail/actions/runs/35592712208).
+This was the one deployment-package piece that had remained genuinely
+unverified; it no longer is -- every mandatory V01-V15 capability now has
+real, executed evidence behind it, not just a review.
