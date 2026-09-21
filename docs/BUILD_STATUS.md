@@ -61,6 +61,32 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 
 ## Session log
 
+- 2026-09-21 (session 5): Deployed the backend for real (Railway: Postgres
+  + api + merchant-sandbox, self-migrating on boot) and the frontend
+  (Vercel), then worked through `docs/ROADMAP.md`'s concrete engineering
+  follow-ups end to end: extracted `packages/db`/`packages/gateway-core`
+  out of `apps/api`; built a reconciliation tool for actions stuck in
+  `unknown` (worker backoff + give-up, `GET/POST /v1/reconciliation`,
+  a dashboard page); gave `require_order_ownership` a real deny case;
+  added fixed-threshold anomaly detection for a burst of requests from one
+  credential (`GET /v1/security/anomalies`, a dashboard page); generated
+  `docs/openapi.json` from the same zod schemas that validate each route;
+  broadened Playwright coverage to Delegations/Policies/Settings/8 Demo
+  Lab scenarios/mobile layouts (11/11 passing). Found and fixed a real
+  production incident along the way: neither Postgres pool had an `error`
+  listener, so a dead idle connection crashed the whole process -- found
+  because enabling Railway's point-in-time-recovery backups restarted
+  Postgres and did exactly that to the live API. Added the admin-bootstrap
+  command `docs/PRODUCT_SPEC.md` requires for `APP_MODE=production`
+  (`scripts/bootstrap-admin.ts`), CI Docker image publishing to GHCR
+  (verified: both images built successfully on the first real run), and
+  seeded the live Railway database with the Northstar Commerce demo org.
+  97 unit/integration tests + 11 e2e tests passing at the end, all real,
+  all run. One partial gap: a Railway staging environment was created
+  with a working `api` instance, but `merchant-sandbox` could not be
+  added to it -- every deploy attempt failed with an upload error the CLI
+  and API gave no further detail on, unlike its identical production
+  deploy which works fine. Left as a known gap rather than force-fixed.
 - 2026-09-21 (session 4): Created `yassineaqejjaj/trustrail` (private) on
   GitHub and pushed `main` (20 commits at push time). This gave
   `.github/workflows/ci.yml` its first execution on a real Actions
