@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { demoRuns } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { demoRuns } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { userRoute } from "../http/handlers.js";
 import { requireRole } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
@@ -13,7 +13,7 @@ import { SCENARIO_KEYS, runScenario, type ScenarioContext } from "../demo/scenar
 import { resetDemoActivity } from "../demo/reset.js";
 import { seedNorthstarCommerce } from "../demo/seedNorthstar.js";
 
-const runRequestSchema = z.object({ scenario_key: z.enum(SCENARIO_KEYS) }).strict();
+export const runRequestSchema = z.object({ scenario_key: z.enum(SCENARIO_KEYS) }).strict();
 
 export interface DemoRouteDeps {
   scenarioDeps: Omit<ScenarioContext, "seed" | "db">;

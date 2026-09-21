@@ -1,6 +1,6 @@
-import type { Db } from "../db/client.js";
-import { auditEvents } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { auditEvents } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 
 export async function writeAuditEvent(
   db: Db,

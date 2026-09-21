@@ -1,13 +1,13 @@
 import type { FastifyInstance } from "fastify";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
 import { userRoute } from "../http/handlers.js";
 import { ApiError, sendApiError } from "../http/errors.js";
 import { createActionRequestSchema } from "@trustrail/contracts";
 import { evaluate } from "@trustrail/policy-engine";
 import { resolveGrantChain } from "../gateway/grantChain.js";
 import { getActivePolicy } from "../gateway/policyLookup.js";
-import type { Connector } from "../gateway/connector.js";
+import type { Connector } from "@trustrail/gateway-core";
 
 /**
  * "Simulation performs no external writes and no reservations. Label its

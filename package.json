@@ -16,6 +16,8 @@
     "demo:reset": "tsx scripts/demo-reset.ts",
     "benchmark": "tsx scripts/benchmark.ts",
     "verify": "tsx scripts/verify.ts",
+    "generate:openapi": "tsx scripts/generate-openapi.ts",
+    "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "test:e2e": "pnpm --filter @trustrail/e2e run test",
     "build": "pnpm -r --filter=./packages/* --filter=./apps/* run build",
     "lint": "pnpm -r run lint",
@@ -24,6 +26,7 @@
     "migrate": "pnpm --filter @trustrail/api run migrate"
   },
   "dependencies": {
+    "@trustrail/db": "workspace:*",
     "embedded-postgres": "18.4.0-beta.17",
     "pg": "^8.13.1"
   },

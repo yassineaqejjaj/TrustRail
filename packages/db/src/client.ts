@@ -15,6 +15,18 @@ export function getPool(): pg.Pool {
       throw new Error("APP_DATABASE_URL is not set");
     }
     pool = new Pool({ connectionString, max: 10 });
+    // node-postgres emits `error` on the pool when an otherwise-idle
+    // client's connection dies (e.g. the server restarts, or a host kills
+    // idle connections) -- with no listener, Node treats that as an
+    // uncaught exception and crashes the whole process, taking down every
+    // in-flight request, not just the one connection. Found for real: a
+    // Postgres restart (enabling point-in-time recovery) killed the API's
+    // pooled connections and crashed the process outright. The pool
+    // itself still recovers the individual dead client on its own; this
+    // handler only stops that from being fatal.
+    pool.on("error", (err) => {
+      console.error("database pool error (recovered, not fatal):", err);
+    });
   }
   return pool;
 }

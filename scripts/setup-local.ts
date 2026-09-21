@@ -8,9 +8,9 @@ import { bootstrapRolesAndDatabase } from "../apps/api/src/db/roles.js";
 import { runMigrations } from "../apps/api/src/db/migrate.js";
 import { runMerchantMigrations } from "../apps/merchant-sandbox/src/db/migrate.js";
 import { generateSigningKeyPair } from "@trustrail/receipt-verifier";
-import { getDb, closePool } from "../apps/api/src/db/client.js";
-import { signingKeys } from "../apps/api/src/db/schema.js";
-import { newId } from "../apps/api/src/db/ids.js";
+import { getDb, closePool } from "@trustrail/db";
+import { signingKeys } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 
 const KEYS_DIR = path.join(ROOT, "infra", "keys");
 

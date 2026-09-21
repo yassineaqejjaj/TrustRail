@@ -2,10 +2,21 @@
 
 Base path: `/v1` (except health checks and `/.well-known/jwks.json`). All
 request/response bodies are JSON. Errors are `{code, message, request_id,
-details?}` with a standard HTTP status. This document describes the routes
-as actually implemented in `apps/api/src/routes/*.ts` — read those files for
-exact zod schemas if you need field-level precision beyond what's below.
-There is no separate generated OpenAPI file yet (see `docs/BUILD_STATUS.md`).
+details?}` with a standard HTTP status.
+
+**Exact request/response shapes now live in [`docs/openapi.json`](./openapi.json),
+generated from the same zod schemas the routes validate against** (see
+`scripts/generate-openapi.ts`; regenerate with `pnpm generate:openapi` after
+changing a route or a `packages/contracts` schema). This page stays as prose
+for everything the generated spec doesn't capture on its own: the auth
+model, role hierarchy, pagination/idempotency conventions, and the error
+code vocabulary below. Field-level precision (which fields are optional,
+enum values, string formats, nullability) belongs to the generated spec —
+if this page and `openapi.json` ever disagree on a shape, the generated
+spec wins. One exception: `GET /v1/events` is a Server-Sent Events stream,
+not a JSON response, so the generated spec only documents its existence —
+see that route's entry below and its description in `openapi.json` for the
+per-event payload shape.
 
 ## Auth
 

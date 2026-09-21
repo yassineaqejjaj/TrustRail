@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import type { Db } from "../db/client.js";
+import type { Db } from "@trustrail/db";
 import { authenticateUserWithOrg, authenticateAgent, authenticateUserSession, AuthError, type UserAuthContext, type AgentAuthContext } from "../auth/context.js";
 import { ApiError, sendApiError } from "./errors.js";
 

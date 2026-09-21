@@ -1,8 +1,8 @@
-import type { Db } from "../db/client.js";
-import { receipts } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { receipts } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { signReceipt } from "@trustrail/receipt-verifier";
-import type { ActiveSigningKey } from "./keys.js";
+import type { ActiveSigningKey } from "./signing.js";
 import type { ReceiptPayload, ReceiptType, Decision, ExecutionState, ReasonCode, ActionName } from "@trustrail/contracts";
 
 export interface ReceiptInputs {

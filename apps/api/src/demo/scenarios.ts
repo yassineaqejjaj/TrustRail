@@ -1,12 +1,12 @@
-import type { Db } from "../db/client.js";
+import type { Db } from "@trustrail/db";
 import { submitAction, type SubmitActionDeps } from "../gateway/submitAction.js";
 import { decideApproval, type ApprovalDecisionDeps } from "../gateway/approvalResume.js";
-import { dispatchAction } from "../gateway/dispatch.js";
+import { dispatchAction } from "@trustrail/gateway-core";
 import type { AgentAuthContext, UserAuthContext } from "../auth/context.js";
 import type { CreateActionRequest } from "@trustrail/contracts";
 import type { SeedResult } from "./seedNorthstar.js";
 import { createFaultInjectingConnector } from "./faultInjectingConnector.js";
-import { withTenant } from "../db/client.js";
+import { withTenant } from "@trustrail/db";
 
 export const SCENARIO_KEYS = [
   "eur80_auto_refund",
@@ -21,6 +21,7 @@ export const SCENARIO_KEYS = [
   "concurrent_budget_limit",
   "connector_timeout_reconciled",
   "direct_merchant_write_rejected",
+  "order_not_owned_denied",
 ] as const;
 export type ScenarioKey = (typeof SCENARIO_KEYS)[number];
 
@@ -77,6 +78,15 @@ export async function runScenario(key: ScenarioKey, ctx: ScenarioContext): Promi
       return scenarioConnectorTimeout(ctx);
     case "direct_merchant_write_rejected":
       return scenarioDirectMerchantWrite(ctx);
+    case "order_not_owned_denied":
+      return scenarioDenied(
+        ctx,
+        "order_demo_not_owned",
+        5_000,
+        "order_not_owned_denied",
+        undefined,
+        "Support Agent requests a refund on an order owned by a different customer"
+      );
   }
 }
 
@@ -118,14 +128,16 @@ async function scenarioEur350Approval(ctx: ScenarioContext): Promise<ScenarioSte
   return steps;
 }
 
-async function scenarioDenied(ctx: ScenarioContext, resourceId: string, amountMinor: number, label: string, reason?: string): Promise<ScenarioStep[]> {
+async function scenarioDenied(ctx: ScenarioContext, resourceId: string, amountMinor: number, label: string, reason?: string, descriptionOverride?: string): Promise<ScenarioStep[]> {
   const body = refundRequest(resourceId, amountMinor, reason);
   body.grant_id = ctx.seed.rootGrantId;
   const result = await submitAction(ctx.db, ctx.deps, supportCtx(ctx.seed), body, `demo-${label}-${Date.now()}`);
   return [
     {
       step: "submit",
-      description: reason ? `Free-text reason contains an override instruction; policy still applies` : `Support Agent requests EUR ${(amountMinor / 100).toFixed(2)}, above the hard denial ceiling`,
+      description:
+        descriptionOverride ??
+        (reason ? `Free-text reason contains an override instruction; policy still applies` : `Support Agent requests EUR ${(amountMinor / 100).toFixed(2)}, above the hard denial ceiling`),
       ok: result.action.decision === "DENY",
       detail: { decision: result.action.decision, reason_codes: result.action.reasonCodes, connector_reference: result.action.connectorReference },
     },
@@ -170,7 +182,7 @@ async function scenarioChildCapRejected(ctx: ScenarioContext): Promise<ScenarioS
 }
 
 async function scenarioRootRevoked(ctx: ScenarioContext): Promise<ScenarioStep[]> {
-  const { grants } = await import("../db/schema.js");
+  const { grants } = await import("@trustrail/db");
   const { eq } = await import("drizzle-orm");
   await withTenant(ctx.db, ctx.seed.organizationId, (tx) =>
     tx.update(grants).set({ status: "revoked", revokedAt: new Date(), revocationReason: "demo scenario" }).where(eq(grants.id, ctx.seed.rootGrantId))
@@ -221,7 +233,7 @@ async function scenarioIdempotencyConflict(ctx: ScenarioContext): Promise<Scenar
 }
 
 async function scenarioReceiptTamper(ctx: ScenarioContext): Promise<ScenarioStep[]> {
-  const { receipts } = await import("../db/schema.js");
+  const { receipts } = await import("@trustrail/db");
   const { eq, and, desc } = await import("drizzle-orm");
   const { verifyReceiptJws } = await import("@trustrail/receipt-verifier");
   const { getTrustedKeys } = await import("../gateway/keys.js");

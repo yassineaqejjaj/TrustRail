@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { grants } from "../db/schema.js";
+import type { Db } from "@trustrail/db";
+import { grants } from "@trustrail/db";
 import type { GrantChainLink } from "@trustrail/policy-engine";
 import type { ActionName, Currency } from "@trustrail/contracts";
 

@@ -23,9 +23,7 @@ import pg from "pg";
 import { eq } from "drizzle-orm";
 import { bootstrapRolesAndDatabase } from "./roles.js";
 import { runMigrations } from "./migrate.js";
-import { getDb, closePool } from "./client.js";
-import { signingKeys } from "./schema.js";
-import { newId } from "./ids.js";
+import { getDb, closePool, signingKeys, newId } from "@trustrail/db";
 import { generateSigningKeyPair } from "@trustrail/receipt-verifier";
 
 const KEYS_DIR = process.env.SIGNING_KEYS_DIR ?? "/keys";

@@ -15,6 +15,12 @@ export function getPool(): pg.Pool {
       throw new Error("MERCHANT_DATABASE_URL is not set");
     }
     pool = new Pool({ connectionString, max: 10 });
+    // See apps/api's @trustrail/db client for why this matters: without
+    // it, a dead idle connection (e.g. the database restarting) crashes
+    // the whole process instead of just that one connection.
+    pool.on("error", (err) => {
+      console.error("database pool error (recovered, not fatal):", err);
+    });
   }
   return pool;
 }

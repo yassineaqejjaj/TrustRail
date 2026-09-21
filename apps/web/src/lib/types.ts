@@ -185,6 +185,29 @@ export interface ApprovalListItem {
   } | null;
 }
 
+export interface AgentActivityAnomaly {
+  agent_id: string;
+  agent_name: string;
+  window_seconds: number;
+  request_count: number;
+  threshold: number;
+}
+
+export interface ReconciliationItem {
+  action_id: string;
+  resource_id: string;
+  action: ActionName;
+  amount_minor: number;
+  currency: Currency;
+  actor_agent_id: string;
+  attempt_count: number;
+  last_error: string | null;
+  job_status: string;
+  needs_manual_review: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ReceiptGetResponse {
   receipt_id: string;
   receipt_type: "decision" | "execution";

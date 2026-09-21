@@ -1,0 +1,4882 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TrustRail API",
+    "version": "0.1.0",
+    "description": "Generated from the zod schemas that actually validate each route (packages/contracts and apps/api/src/routes/*.ts). See docs/API.md for prose (auth model, error envelope, rate limits). Regenerate with `pnpm generate:openapi`."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Base path is /v1 for all routes except health checks and /.well-known/jwks.json."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Organizations"
+    },
+    {
+      "name": "Agents"
+    },
+    {
+      "name": "Grants"
+    },
+    {
+      "name": "Policies"
+    },
+    {
+      "name": "Actions"
+    },
+    {
+      "name": "Approvals"
+    },
+    {
+      "name": "Reconciliation"
+    },
+    {
+      "name": "Receipts"
+    },
+    {
+      "name": "Metrics"
+    },
+    {
+      "name": "Demo"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "AgentBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Agent credential: `Authorization: Bearer <secret>` returned once by POST /v1/agents/:id/credentials. Identifies exactly one agent in exactly one organization."
+      },
+      "SessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "trustrail_session",
+        "description": "HttpOnly session cookie set by POST /v1/auth/login or /v1/auth/register. Most session-authenticated routes also require the X-Organization-Id header (see the OrganizationId parameter)."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "BAD_REQUEST"
+          },
+          "message": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "request_id"
+        ]
+      },
+      "OrganizationId": {
+        "type": "string"
+      },
+      "Jwk": {
+        "type": "object",
+        "properties": {
+          "kty": {
+            "type": "string"
+          },
+          "kid": {
+            "type": "string"
+          },
+          "use": {
+            "type": "string"
+          },
+          "alg": {
+            "type": "string"
+          },
+          "crv": {
+            "type": "string"
+          },
+          "x": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kty"
+        ]
+      },
+      "StatusOk": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "Agent": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "owner_user_id": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "production"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "disabled",
+              "revoked"
+            ]
+          },
+          "last_activity_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent_id",
+          "name",
+          "description",
+          "owner_user_id",
+          "environment",
+          "status",
+          "last_activity_at",
+          "created_at"
+        ]
+      },
+      "Grant": {
+        "type": "object",
+        "properties": {
+          "grant_id": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "production"
+            ]
+          },
+          "principal_id": {
+            "type": "string"
+          },
+          "issuer_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "agent"
+            ]
+          },
+          "issuer_id": {
+            "type": "string"
+          },
+          "subject_agent_id": {
+            "type": "string"
+          },
+          "parent_grant_id": {
+            "type": "string",
+            "nullable": true
+          },
+          "root_grant_id": {
+            "type": "string"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowed_resource_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "unrestricted_resources": {
+            "type": "boolean"
+          },
+          "allowed_connector_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "currency": {
+            "type": "string"
+          },
+          "max_amount_minor": {
+            "type": "number"
+          },
+          "root_budget_limit_minor": {
+            "type": "number",
+            "nullable": true
+          },
+          "child_budget_limit_minor": {
+            "type": "number",
+            "nullable": true
+          },
+          "valid_from": {
+            "type": "string",
+            "nullable": true
+          },
+          "expires_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "delegation_allowed": {
+            "type": "boolean"
+          },
+          "max_remaining_depth": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "revoked",
+              "expired"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "revoked_at": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "grant_id",
+          "environment",
+          "principal_id",
+          "issuer_type",
+          "issuer_id",
+          "subject_agent_id",
+          "parent_grant_id",
+          "root_grant_id",
+          "allowed_actions",
+          "allowed_resource_ids",
+          "unrestricted_resources",
+          "allowed_connector_ids",
+          "currency",
+          "max_amount_minor",
+          "root_budget_limit_minor",
+          "child_budget_limit_minor",
+          "valid_from",
+          "expires_at",
+          "delegation_allowed",
+          "max_remaining_depth",
+          "status",
+          "created_at",
+          "revoked_at"
+        ]
+      }
+    },
+    "parameters": {
+      "OrganizationId": {
+        "schema": {
+          "$ref": "#/components/schemas/OrganizationId"
+        },
+        "required": true,
+        "description": "Organization the session's user is a member of. Required on every org-scoped user route.",
+        "name": "X-Organization-Id",
+        "in": "header"
+      }
+    }
+  },
+  "paths": {
+    "/health/live": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Liveness probe",
+        "responses": {
+          "200": {
+            "description": "Process is up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Readiness probe",
+        "description": "Also checks the database connection.",
+        "responses": {
+          "200": {
+            "description": "Database reachable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database not reachable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "UNAVAILABLE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/jwks.json": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Public signing keys (JWKS)",
+        "description": "Excludes revoked keys. Used to independently verify a receipt's JWS.",
+        "responses": {
+          "200": {
+            "description": "JWK set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "keys": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Jwk"
+                      }
+                    }
+                  },
+                  "required": [
+                    "keys"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register (local/demo mode only)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created; session cookie set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "user_id",
+                    "email"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Open registration disabled (production mode).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An account with this email already exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session cookie set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "user_id",
+                    "email"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout (idempotent)",
+        "responses": {
+          "200": {
+            "description": "Always ok, even if the session was already invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOk"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/organizations": {
+      "post": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Create an organization",
+        "description": "Creates the org, makes the caller its Owner, and seeds a published default policy for refund.create/sandbox.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Organization created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization_id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "owner"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "organization_id",
+                    "name",
+                    "role"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Current user and memberships",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current user + all memberships.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "memberships": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "organization_id": {
+                            "type": "string"
+                          },
+                          "organization_name": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": [
+                              "owner",
+                              "admin",
+                              "operator",
+                              "approver",
+                              "viewer"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "organization_id",
+                          "organization_name",
+                          "role"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "user_id",
+                    "email",
+                    "memberships"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memberships": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "List members and roles",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members of the current organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "memberships": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "membership_id": {
+                            "type": "string"
+                          },
+                          "user_id": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": [
+                              "owner",
+                              "admin",
+                              "operator",
+                              "approver",
+                              "viewer"
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "membership_id",
+                          "user_id",
+                          "email",
+                          "role",
+                          "created_at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "memberships"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Attach a role to an existing account (Admin+)",
+        "description": "There is no invite-by-email flow in V1 -- the target user must already have an account.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "owner",
+                      "admin",
+                      "operator",
+                      "approver",
+                      "viewer"
+                    ]
+                  }
+                },
+                "required": [
+                  "email",
+                  "role"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing membership's role updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "membership_id": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "owner",
+                        "admin",
+                        "operator",
+                        "approver",
+                        "viewer"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "membership_id",
+                    "role"
+                  ]
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New membership created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "membership_id": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "owner",
+                        "admin",
+                        "operator",
+                        "approver",
+                        "viewer"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "membership_id",
+                    "role"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only an Owner may grant the Owner role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No account exists for this email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "List agents",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agents in this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Agent"
+                      }
+                    }
+                  },
+                  "required": [
+                    "agents"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Create an agent (Operator+)",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "default": ""
+                  },
+                  "environment": {
+                    "type": "string",
+                    "enum": [
+                      "sandbox",
+                      "production"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "environment"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agent created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agent_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "agent_id"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{id}": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get an agent, including credential history",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent detail. Never includes secrets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Agent"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "credentials": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "credential_id": {
+                                "type": "string"
+                              },
+                              "prefix": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "active",
+                                  "rotated",
+                                  "revoked",
+                                  "expired"
+                                ]
+                              },
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "expires_at": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "revoked_at": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "credential_id",
+                              "prefix",
+                              "status",
+                              "created_at",
+                              "expires_at",
+                              "revoked_at"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "credentials"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Update an agent (owner-of-agent or Admin+)",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "disabled"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOk"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not permitted to manage this agent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agents/{id}/credentials": {
+      "post": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Issue a new credential (owner-of-agent or Admin+)",
+        "description": "The secret is returned once and cannot be retrieved again.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Secret shown once.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "credential_id": {
+                      "type": "string"
+                    },
+                    "secret": {
+                      "type": "string"
+                    },
+                    "prefix": {
+                      "type": "string"
+                    },
+                    "warning": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "credential_id",
+                    "secret",
+                    "prefix",
+                    "warning"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not permitted to manage this agent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/credentials/{id}/revoke": {
+      "post": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Revoke a credential (owner-of-agent or Admin+)",
+        "description": "Immediate; the credential can never authenticate again.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOk"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not permitted to manage this credential.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Credential not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/grants": {
+      "get": {
+        "tags": [
+          "Grants"
+        ],
+        "summary": "List grants",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grants in this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "grants": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Grant"
+                      }
+                    }
+                  },
+                  "required": [
+                    "grants"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Grants"
+        ],
+        "summary": "Issue a grant (root: session Admin+; child: parent grant's subject agent bearer credential)",
+        "description": "A root grant (parent_grant_id: null) requires a user session (Admin+). A child grant requires the Authorization bearer credential of the parent grant's own subject agent -- the server derives the issuer from that credential, never from the request body.",
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "AgentBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "environment": {
+                    "type": "string",
+                    "enum": [
+                      "sandbox",
+                      "production"
+                    ]
+                  },
+                  "principal_id": {
+                    "type": "string",
+                    "pattern": "^usr_[a-zA-Z0-9]{20,}$"
+                  },
+                  "subject_agent_id": {
+                    "type": "string",
+                    "pattern": "^agt_[a-zA-Z0-9]{20,}$"
+                  },
+                  "parent_grant_id": {
+                    "type": "string",
+                    "nullable": true,
+                    "pattern": "^grant_[a-zA-Z0-9]{20,}$",
+                    "default": null
+                  },
+                  "allowed_actions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "refund.create"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "allowed_resource_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 1000
+                  },
+                  "unrestricted_resources": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "allowed_connector_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                    },
+                    "minItems": 1
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "EUR"
+                    ]
+                  },
+                  "max_amount_minor": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 1000000000
+                  },
+                  "root_budget_limit_minor": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 1000000000
+                  },
+                  "child_budget_limit_minor": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 1000000000
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date-time",
+                    "default": null
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date-time"
+                  },
+                  "delegation_allowed": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "max_remaining_depth": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3
+                  }
+                },
+                "required": [
+                  "environment",
+                  "principal_id",
+                  "subject_agent_id",
+                  "allowed_actions",
+                  "allowed_resource_ids",
+                  "allowed_connector_ids",
+                  "currency",
+                  "max_amount_minor",
+                  "root_budget_limit_minor",
+                  "child_budget_limit_minor",
+                  "expires_at",
+                  "max_remaining_depth"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Grant created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "grant_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "grant_id"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not permitted to issue this grant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Parent grant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Child grant is not a strict subset of its parent, or delegation depth exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/grants/{id}/revoke": {
+      "post": {
+        "tags": [
+          "Grants"
+        ],
+        "summary": "Revoke a grant and everything delegated from it (Admin+)",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOk"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Grant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/policies": {
+      "get": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "List every policy bundle with full version history",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy bundles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policies": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "policy_bundle_id": {
+                            "type": "string"
+                          },
+                          "environment": {
+                            "type": "string",
+                            "enum": [
+                              "sandbox",
+                              "production"
+                            ]
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "active_version_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "revision": {
+                            "type": "number"
+                          },
+                          "versions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "version_id": {
+                                  "type": "string"
+                                },
+                                "version_number": {
+                                  "type": "number"
+                                },
+                                "bundle": {
+                                  "type": "object",
+                                  "properties": {
+                                    "schema_version": {
+                                      "type": "string",
+                                      "enum": [
+                                        "1"
+                                      ]
+                                    },
+                                    "action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "refund.create"
+                                      ]
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "enum": [
+                                        "EUR"
+                                      ]
+                                    },
+                                    "automatic_limit_minor": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "exclusiveMinimum": true,
+                                      "maximum": 1000000000
+                                    },
+                                    "approval_limit_minor": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "exclusiveMinimum": true,
+                                      "maximum": 1000000000
+                                    },
+                                    "root_daily_limit_minor": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "exclusiveMinimum": true,
+                                      "maximum": 1000000000
+                                    },
+                                    "require_original_payment_destination": {
+                                      "type": "boolean"
+                                    },
+                                    "require_order_ownership": {
+                                      "type": "boolean"
+                                    },
+                                    "max_order_age_days": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "exclusiveMinimum": true,
+                                      "maximum": 3650
+                                    },
+                                    "deny_if_payment_disputed": {
+                                      "type": "boolean"
+                                    },
+                                    "approval_ttl_seconds": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "exclusiveMinimum": true,
+                                      "maximum": 86400
+                                    }
+                                  },
+                                  "required": [
+                                    "schema_version",
+                                    "action",
+                                    "currency",
+                                    "automatic_limit_minor",
+                                    "approval_limit_minor",
+                                    "root_daily_limit_minor",
+                                    "require_original_payment_destination",
+                                    "require_order_ownership",
+                                    "max_order_age_days",
+                                    "deny_if_payment_disputed",
+                                    "approval_ttl_seconds"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "bundle_hash": {
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "draft",
+                                    "published",
+                                    "superseded"
+                                  ]
+                                },
+                                "change_reason": {
+                                  "type": "string"
+                                },
+                                "created_at": {
+                                  "type": "string"
+                                },
+                                "published_at": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "version_id",
+                                "version_number",
+                                "bundle",
+                                "bundle_hash",
+                                "status",
+                                "change_reason",
+                                "created_at",
+                                "published_at"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "policy_bundle_id",
+                          "environment",
+                          "action",
+                          "active_version_id",
+                          "revision",
+                          "versions"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "policies"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "Create a new policy bundle slot with an initial draft version (Admin+)",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "environment": {
+                    "type": "string",
+                    "enum": [
+                      "sandbox",
+                      "production"
+                    ]
+                  },
+                  "bundle": {
+                    "type": "object",
+                    "properties": {
+                      "schema_version": {
+                        "type": "string",
+                        "enum": [
+                          "1"
+                        ]
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "refund.create"
+                        ]
+                      },
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "EUR"
+                        ]
+                      },
+                      "automatic_limit_minor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 1000000000
+                      },
+                      "approval_limit_minor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 1000000000
+                      },
+                      "root_daily_limit_minor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 1000000000
+                      },
+                      "require_original_payment_destination": {
+                        "type": "boolean"
+                      },
+                      "require_order_ownership": {
+                        "type": "boolean"
+                      },
+                      "max_order_age_days": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 3650
+                      },
+                      "deny_if_payment_disputed": {
+                        "type": "boolean"
+                      },
+                      "approval_ttl_seconds": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 86400
+                      }
+                    },
+                    "required": [
+                      "schema_version",
+                      "action",
+                      "currency",
+                      "automatic_limit_minor",
+                      "approval_limit_minor",
+                      "root_daily_limit_minor",
+                      "require_original_payment_destination",
+                      "require_order_ownership",
+                      "max_order_age_days",
+                      "deny_if_payment_disputed",
+                      "approval_ttl_seconds"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "environment",
+                  "bundle"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Draft created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy_bundle_id": {
+                      "type": "string"
+                    },
+                    "version_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "policy_bundle_id",
+                    "version_id"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A policy bundle already exists for this environment/action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/policies/{id}/versions": {
+      "post": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "Add a new draft version to an existing bundle (Admin+)",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bundle": {
+                    "type": "object",
+                    "properties": {
+                      "schema_version": {
+                        "type": "string",
+                        "enum": [
+                          "1"
+                        ]
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "refund.create"
+                        ]
+                      },
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "EUR"
+                        ]
+                      },
+                      "automatic_limit_minor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 1000000000
+                      },
+                      "approval_limit_minor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 1000000000
+                      },
+                      "root_daily_limit_minor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 1000000000
+                      },
+                      "require_original_payment_destination": {
+                        "type": "boolean"
+                      },
+                      "require_order_ownership": {
+                        "type": "boolean"
+                      },
+                      "max_order_age_days": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 3650
+                      },
+                      "deny_if_payment_disputed": {
+                        "type": "boolean"
+                      },
+                      "approval_ttl_seconds": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 86400
+                      }
+                    },
+                    "required": [
+                      "schema_version",
+                      "action",
+                      "currency",
+                      "automatic_limit_minor",
+                      "approval_limit_minor",
+                      "root_daily_limit_minor",
+                      "require_original_payment_destination",
+                      "require_order_ownership",
+                      "max_order_age_days",
+                      "deny_if_payment_disputed",
+                      "approval_ttl_seconds"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "change_reason": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "bundle"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Draft version added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "version_id"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bundle action must match the policy bundle's action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Policy bundle not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/policies/{id}/publish": {
+      "post": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "Publish a draft version (Admin+)",
+        "description": "Optimistic-locked: fails with 409 if expected_revision doesn't match the bundle's current revision.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version_id": {
+                    "type": "string"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "change_reason": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "version_id",
+                  "expected_revision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Published.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOk"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Policy bundle or version not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "expected_revision is stale.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/simulations": {
+      "post": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "Predict the outcome of an action without reserving or writing anything",
+        "description": "Same request shape as POST /v1/actions; runs the real evaluator, makes no reservation and no connector call.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grant_id": {
+                    "type": "string",
+                    "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                  },
+                  "connector_id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "refund.create"
+                    ]
+                  },
+                  "resource_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "properties": {
+                      "amount_minor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 1000000000
+                      },
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "EUR"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "default": ""
+                      }
+                    },
+                    "required": [
+                      "amount_minor",
+                      "currency"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "grant_id",
+                  "connector_id",
+                  "action",
+                  "resource_id",
+                  "arguments"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Predicted outcome, not a transferable authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prediction": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "decision": {
+                      "type": "string",
+                      "enum": [
+                        "ALLOW",
+                        "DENY",
+                        "REQUIRE_APPROVAL"
+                      ]
+                    },
+                    "reason_codes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "GRANT_REVOKED",
+                          "GRANT_EXPIRED",
+                          "GRANT_NOT_FOUND",
+                          "SCOPE_MISMATCH",
+                          "DELEGATION_WIDENING",
+                          "DELEGATION_NOT_ALLOWED",
+                          "DELEGATION_DEPTH_EXCEEDED",
+                          "AMOUNT_LIMIT",
+                          "BUDGET_EXCEEDED",
+                          "APPROVAL_REQUIRED",
+                          "APPROVAL_EXPIRED",
+                          "APPROVAL_REJECTED",
+                          "RESOURCE_MISMATCH",
+                          "STATE_UNAVAILABLE",
+                          "CONNECTOR_UNAVAILABLE",
+                          "IDEMPOTENCY_CONFLICT",
+                          "POLICY_UNAVAILABLE",
+                          "CREDENTIAL_REVOKED",
+                          "INTERNAL_ERROR"
+                        ]
+                      }
+                    },
+                    "explanation": {
+                      "type": "string"
+                    },
+                    "matched_checks": {
+                      "type": "array",
+                      "items": {
+                        "nullable": true
+                      }
+                    },
+                    "evaluated_values": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "required": [
+                    "prediction",
+                    "note",
+                    "decision",
+                    "reason_codes",
+                    "explanation",
+                    "matched_checks",
+                    "evaluated_values"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid simulation request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/actions": {
+      "post": {
+        "tags": [
+          "Actions"
+        ],
+        "summary": "Submit an action for authorization",
+        "description": "The core endpoint. Requires an Idempotency-Key header. Response is 200 if the decision resolved to a terminal state in this same call, 202 if still in flight, 409 for an idempotency-key conflict.",
+        "security": [
+          {
+            "AgentBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Required. Same key + same payload replays the prior result; same key + different payload is a 409."
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grant_id": {
+                    "type": "string",
+                    "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                  },
+                  "connector_id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "refund.create"
+                    ]
+                  },
+                  "resource_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "properties": {
+                      "amount_minor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 1000000000
+                      },
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "EUR"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "default": ""
+                      }
+                    },
+                    "required": [
+                      "amount_minor",
+                      "currency"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "grant_id",
+                  "connector_id",
+                  "action",
+                  "resource_id",
+                  "arguments"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Terminal in this call (DENY, or ALLOW+succeeded/failed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "action_id": {
+                      "type": "string"
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "resource_id": {
+                      "type": "string"
+                    },
+                    "actor_agent_id": {
+                      "type": "string"
+                    },
+                    "grant_id": {
+                      "type": "string"
+                    },
+                    "decision": {
+                      "type": "string",
+                      "enum": [
+                        "ALLOW",
+                        "DENY",
+                        "REQUIRE_APPROVAL"
+                      ]
+                    },
+                    "execution_state": {
+                      "type": "string",
+                      "enum": [
+                        "received",
+                        "awaiting_approval",
+                        "ready",
+                        "reserved",
+                        "dispatching",
+                        "succeeded",
+                        "failed",
+                        "unknown",
+                        "denied",
+                        "cancelled",
+                        "expired"
+                      ]
+                    },
+                    "reason_codes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "GRANT_REVOKED",
+                          "GRANT_EXPIRED",
+                          "GRANT_NOT_FOUND",
+                          "SCOPE_MISMATCH",
+                          "DELEGATION_WIDENING",
+                          "DELEGATION_NOT_ALLOWED",
+                          "DELEGATION_DEPTH_EXCEEDED",
+                          "AMOUNT_LIMIT",
+                          "BUDGET_EXCEEDED",
+                          "APPROVAL_REQUIRED",
+                          "APPROVAL_EXPIRED",
+                          "APPROVAL_REJECTED",
+                          "RESOURCE_MISMATCH",
+                          "STATE_UNAVAILABLE",
+                          "CONNECTOR_UNAVAILABLE",
+                          "IDEMPOTENCY_CONFLICT",
+                          "POLICY_UNAVAILABLE",
+                          "CREDENTIAL_REVOKED",
+                          "INTERNAL_ERROR"
+                        ]
+                      }
+                    },
+                    "amount_minor": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "environment": {
+                      "type": "string",
+                      "enum": [
+                        "sandbox",
+                        "production"
+                      ]
+                    },
+                    "connector_id": {
+                      "type": "string"
+                    },
+                    "connector_reference": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "root_grant_id": {
+                      "type": "string"
+                    },
+                    "principal_id": {
+                      "type": "string"
+                    },
+                    "policy_version_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "policy_hash": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "request_hash": {
+                      "type": "string"
+                    },
+                    "trace_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approval": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "approval_id": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "rejected",
+                            "expired"
+                          ]
+                        },
+                        "expires_at": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "reviewer_user_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "decided_at": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "approval_id",
+                        "status",
+                        "expires_at",
+                        "reviewer_user_id",
+                        "decided_at"
+                      ]
+                    },
+                    "receipts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "receipt_id": {
+                            "type": "string"
+                          },
+                          "receipt_type": {
+                            "type": "string",
+                            "enum": [
+                              "decision",
+                              "execution"
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "receipt_id",
+                          "receipt_type",
+                          "created_at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "action_id",
+                    "action",
+                    "resource_id",
+                    "actor_agent_id",
+                    "grant_id",
+                    "decision",
+                    "execution_state",
+                    "reason_codes",
+                    "amount_minor",
+                    "currency",
+                    "created_at",
+                    "updated_at",
+                    "environment",
+                    "connector_id",
+                    "connector_reference",
+                    "root_grant_id",
+                    "principal_id",
+                    "policy_version_id",
+                    "policy_hash",
+                    "request_hash",
+                    "trace_id",
+                    "approval",
+                    "receipts"
+                  ]
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Still in flight (REQUIRE_APPROVAL, or reserved/dispatching/unknown).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "action_id": {
+                      "type": "string"
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "resource_id": {
+                      "type": "string"
+                    },
+                    "actor_agent_id": {
+                      "type": "string"
+                    },
+                    "grant_id": {
+                      "type": "string"
+                    },
+                    "decision": {
+                      "type": "string",
+                      "enum": [
+                        "ALLOW",
+                        "DENY",
+                        "REQUIRE_APPROVAL"
+                      ]
+                    },
+                    "execution_state": {
+                      "type": "string",
+                      "enum": [
+                        "received",
+                        "awaiting_approval",
+                        "ready",
+                        "reserved",
+                        "dispatching",
+                        "succeeded",
+                        "failed",
+                        "unknown",
+                        "denied",
+                        "cancelled",
+                        "expired"
+                      ]
+                    },
+                    "reason_codes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "GRANT_REVOKED",
+                          "GRANT_EXPIRED",
+                          "GRANT_NOT_FOUND",
+                          "SCOPE_MISMATCH",
+                          "DELEGATION_WIDENING",
+                          "DELEGATION_NOT_ALLOWED",
+                          "DELEGATION_DEPTH_EXCEEDED",
+                          "AMOUNT_LIMIT",
+                          "BUDGET_EXCEEDED",
+                          "APPROVAL_REQUIRED",
+                          "APPROVAL_EXPIRED",
+                          "APPROVAL_REJECTED",
+                          "RESOURCE_MISMATCH",
+                          "STATE_UNAVAILABLE",
+                          "CONNECTOR_UNAVAILABLE",
+                          "IDEMPOTENCY_CONFLICT",
+                          "POLICY_UNAVAILABLE",
+                          "CREDENTIAL_REVOKED",
+                          "INTERNAL_ERROR"
+                        ]
+                      }
+                    },
+                    "amount_minor": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "environment": {
+                      "type": "string",
+                      "enum": [
+                        "sandbox",
+                        "production"
+                      ]
+                    },
+                    "connector_id": {
+                      "type": "string"
+                    },
+                    "connector_reference": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "root_grant_id": {
+                      "type": "string"
+                    },
+                    "principal_id": {
+                      "type": "string"
+                    },
+                    "policy_version_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "policy_hash": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "request_hash": {
+                      "type": "string"
+                    },
+                    "trace_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approval": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "approval_id": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "rejected",
+                            "expired"
+                          ]
+                        },
+                        "expires_at": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "reviewer_user_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "decided_at": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "approval_id",
+                        "status",
+                        "expires_at",
+                        "reviewer_user_id",
+                        "decided_at"
+                      ]
+                    },
+                    "receipts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "receipt_id": {
+                            "type": "string"
+                          },
+                          "receipt_type": {
+                            "type": "string",
+                            "enum": [
+                              "decision",
+                              "execution"
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "receipt_id",
+                          "receipt_type",
+                          "created_at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "action_id",
+                    "action",
+                    "resource_id",
+                    "actor_agent_id",
+                    "grant_id",
+                    "decision",
+                    "execution_state",
+                    "reason_codes",
+                    "amount_minor",
+                    "currency",
+                    "created_at",
+                    "updated_at",
+                    "environment",
+                    "connector_id",
+                    "connector_reference",
+                    "root_grant_id",
+                    "principal_id",
+                    "policy_version_id",
+                    "policy_hash",
+                    "request_hash",
+                    "trace_id",
+                    "approval",
+                    "receipts"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing Idempotency-Key header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency-key conflict: same key, different payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid action request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Actions"
+        ],
+        "summary": "List actions, cursor-paginated by created_at",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "agent_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALLOW",
+                "DENY",
+                "REQUIRE_APPROVAL"
+              ]
+            },
+            "required": false,
+            "name": "decision",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "received",
+                "awaiting_approval",
+                "ready",
+                "reserved",
+                "dispatching",
+                "succeeded",
+                "failed",
+                "unknown",
+                "denied",
+                "cancelled",
+                "expired"
+              ]
+            },
+            "required": false,
+            "name": "execution_state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of actions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "action_id": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "resource_id": {
+                            "type": "string"
+                          },
+                          "actor_agent_id": {
+                            "type": "string"
+                          },
+                          "grant_id": {
+                            "type": "string"
+                          },
+                          "decision": {
+                            "type": "string",
+                            "enum": [
+                              "ALLOW",
+                              "DENY",
+                              "REQUIRE_APPROVAL"
+                            ]
+                          },
+                          "execution_state": {
+                            "type": "string",
+                            "enum": [
+                              "received",
+                              "awaiting_approval",
+                              "ready",
+                              "reserved",
+                              "dispatching",
+                              "succeeded",
+                              "failed",
+                              "unknown",
+                              "denied",
+                              "cancelled",
+                              "expired"
+                            ]
+                          },
+                          "reason_codes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "GRANT_REVOKED",
+                                "GRANT_EXPIRED",
+                                "GRANT_NOT_FOUND",
+                                "SCOPE_MISMATCH",
+                                "DELEGATION_WIDENING",
+                                "DELEGATION_NOT_ALLOWED",
+                                "DELEGATION_DEPTH_EXCEEDED",
+                                "AMOUNT_LIMIT",
+                                "BUDGET_EXCEEDED",
+                                "APPROVAL_REQUIRED",
+                                "APPROVAL_EXPIRED",
+                                "APPROVAL_REJECTED",
+                                "RESOURCE_MISMATCH",
+                                "STATE_UNAVAILABLE",
+                                "CONNECTOR_UNAVAILABLE",
+                                "IDEMPOTENCY_CONFLICT",
+                                "POLICY_UNAVAILABLE",
+                                "CREDENTIAL_REVOKED",
+                                "INTERNAL_ERROR"
+                              ]
+                            }
+                          },
+                          "amount_minor": {
+                            "type": "number"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "action_id",
+                          "action",
+                          "resource_id",
+                          "actor_agent_id",
+                          "grant_id",
+                          "decision",
+                          "execution_state",
+                          "reason_codes",
+                          "amount_minor",
+                          "currency",
+                          "created_at",
+                          "updated_at"
+                        ]
+                      }
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "actions",
+                    "next_cursor"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/connectors/{connectorId}/resources/{resourceId}": {
+      "get": {
+        "tags": [
+          "Actions"
+        ],
+        "summary": "Read-only order lookup through the gateway",
+        "description": "The agent never talks to the merchant directly; the gateway owns the connector credential.",
+        "security": [
+          {
+            "AgentBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "connectorId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "resourceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order facts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resource_id": {
+                      "type": "string"
+                    },
+                    "remaining_amount_minor": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "age_days": {
+                      "type": "number"
+                    },
+                    "disputed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "resource_id",
+                    "remaining_amount_minor",
+                    "currency",
+                    "age_days",
+                    "disputed"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown connector or resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/actions/{id}": {
+      "get": {
+        "tags": [
+          "Actions"
+        ],
+        "summary": "Get full action detail",
+        "description": "Dual auth: a session+org user can view any action in their organization; an agent (bearer) can check an action's status.",
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "AgentBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full detail including delegation chain refs, approval, and linked receipts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "action_id": {
+                      "type": "string"
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "resource_id": {
+                      "type": "string"
+                    },
+                    "actor_agent_id": {
+                      "type": "string"
+                    },
+                    "grant_id": {
+                      "type": "string"
+                    },
+                    "decision": {
+                      "type": "string",
+                      "enum": [
+                        "ALLOW",
+                        "DENY",
+                        "REQUIRE_APPROVAL"
+                      ]
+                    },
+                    "execution_state": {
+                      "type": "string",
+                      "enum": [
+                        "received",
+                        "awaiting_approval",
+                        "ready",
+                        "reserved",
+                        "dispatching",
+                        "succeeded",
+                        "failed",
+                        "unknown",
+                        "denied",
+                        "cancelled",
+                        "expired"
+                      ]
+                    },
+                    "reason_codes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "GRANT_REVOKED",
+                          "GRANT_EXPIRED",
+                          "GRANT_NOT_FOUND",
+                          "SCOPE_MISMATCH",
+                          "DELEGATION_WIDENING",
+                          "DELEGATION_NOT_ALLOWED",
+                          "DELEGATION_DEPTH_EXCEEDED",
+                          "AMOUNT_LIMIT",
+                          "BUDGET_EXCEEDED",
+                          "APPROVAL_REQUIRED",
+                          "APPROVAL_EXPIRED",
+                          "APPROVAL_REJECTED",
+                          "RESOURCE_MISMATCH",
+                          "STATE_UNAVAILABLE",
+                          "CONNECTOR_UNAVAILABLE",
+                          "IDEMPOTENCY_CONFLICT",
+                          "POLICY_UNAVAILABLE",
+                          "CREDENTIAL_REVOKED",
+                          "INTERNAL_ERROR"
+                        ]
+                      }
+                    },
+                    "amount_minor": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "environment": {
+                      "type": "string",
+                      "enum": [
+                        "sandbox",
+                        "production"
+                      ]
+                    },
+                    "connector_id": {
+                      "type": "string"
+                    },
+                    "connector_reference": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "root_grant_id": {
+                      "type": "string"
+                    },
+                    "principal_id": {
+                      "type": "string"
+                    },
+                    "policy_version_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "policy_hash": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "request_hash": {
+                      "type": "string"
+                    },
+                    "trace_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approval": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "approval_id": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "rejected",
+                            "expired"
+                          ]
+                        },
+                        "expires_at": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "reviewer_user_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "decided_at": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "approval_id",
+                        "status",
+                        "expires_at",
+                        "reviewer_user_id",
+                        "decided_at"
+                      ]
+                    },
+                    "receipts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "receipt_id": {
+                            "type": "string"
+                          },
+                          "receipt_type": {
+                            "type": "string",
+                            "enum": [
+                              "decision",
+                              "execution"
+                            ]
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "receipt_id",
+                          "receipt_type",
+                          "created_at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "action_id",
+                    "action",
+                    "resource_id",
+                    "actor_agent_id",
+                    "grant_id",
+                    "decision",
+                    "execution_state",
+                    "reason_codes",
+                    "amount_minor",
+                    "currency",
+                    "created_at",
+                    "updated_at",
+                    "environment",
+                    "connector_id",
+                    "connector_reference",
+                    "root_grant_id",
+                    "principal_id",
+                    "policy_version_id",
+                    "policy_hash",
+                    "request_hash",
+                    "trace_id",
+                    "approval",
+                    "receipts"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Action not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/approvals": {
+      "get": {
+        "tags": [
+          "Approvals"
+        ],
+        "summary": "List approvals (Approver+)",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "expired"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approvals.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "approvals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "approval_id": {
+                            "type": "string"
+                          },
+                          "action_id": {
+                            "type": "string"
+                          },
+                          "principal_id": {
+                            "type": "string"
+                          },
+                          "grant_chain_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "amount_minor": {
+                            "type": "number"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "triggering_rule": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "approved",
+                              "rejected",
+                              "expired"
+                            ]
+                          },
+                          "expires_at": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "reviewer_user_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "decided_at": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "action": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "resource_id": {
+                                "type": "string"
+                              },
+                              "action": {
+                                "type": "string"
+                              },
+                              "actor_agent_id": {
+                                "type": "string"
+                              },
+                              "root_grant_id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "resource_id",
+                              "action",
+                              "actor_agent_id",
+                              "root_grant_id"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "approval_id",
+                          "action_id",
+                          "principal_id",
+                          "grant_chain_ids",
+                          "amount_minor",
+                          "currency",
+                          "triggering_rule",
+                          "status",
+                          "expires_at",
+                          "created_at",
+                          "reviewer_user_id",
+                          "decided_at",
+                          "action"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "approvals"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/approvals/{id}/approve": {
+      "post": {
+        "tags": [
+          "Approvals"
+        ],
+        "summary": "Approve (Approver+)",
+        "description": "Atomic compare-and-set; a concurrent second decision gets 409 ALREADY_DECIDED. Rejects self-approval with 403. A since-superseded policy makes the approval APPROVAL_EXPIRED.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "default": ""
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "action_id": {
+                      "type": "string"
+                    },
+                    "execution_state": {
+                      "type": "string",
+                      "enum": [
+                        "received",
+                        "awaiting_approval",
+                        "ready",
+                        "reserved",
+                        "dispatching",
+                        "succeeded",
+                        "failed",
+                        "unknown",
+                        "denied",
+                        "cancelled",
+                        "expired"
+                      ]
+                    },
+                    "decision": {
+                      "type": "string",
+                      "enum": [
+                        "ALLOW",
+                        "DENY",
+                        "REQUIRE_APPROVAL"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "action_id",
+                    "execution_state",
+                    "decision"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Self-approval is not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_DECIDED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/approvals/{id}/reject": {
+      "post": {
+        "tags": [
+          "Approvals"
+        ],
+        "summary": "Reject (Approver+)",
+        "description": "Same binding/compare-and-set semantics as approve.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "default": ""
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "action_id": {
+                      "type": "string"
+                    },
+                    "execution_state": {
+                      "type": "string",
+                      "enum": [
+                        "received",
+                        "awaiting_approval",
+                        "ready",
+                        "reserved",
+                        "dispatching",
+                        "succeeded",
+                        "failed",
+                        "unknown",
+                        "denied",
+                        "cancelled",
+                        "expired"
+                      ]
+                    },
+                    "decision": {
+                      "type": "string",
+                      "enum": [
+                        "ALLOW",
+                        "DENY",
+                        "REQUIRE_APPROVAL"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "action_id",
+                    "execution_state",
+                    "decision"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_DECIDED.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reconciliation": {
+      "get": {
+        "tags": [
+          "Reconciliation"
+        ],
+        "summary": "List actions stuck in the unknown execution state (Approver+)",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Items needing manual reconciliation, oldest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "action_id": {
+                            "type": "string"
+                          },
+                          "resource_id": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "amount_minor": {
+                            "type": "number"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "actor_agent_id": {
+                            "type": "string"
+                          },
+                          "attempt_count": {
+                            "type": "number"
+                          },
+                          "last_error": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "job_status": {
+                            "type": "string"
+                          },
+                          "needs_manual_review": {
+                            "type": "boolean"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "action_id",
+                          "resource_id",
+                          "action",
+                          "amount_minor",
+                          "currency",
+                          "actor_agent_id",
+                          "attempt_count",
+                          "last_error",
+                          "job_status",
+                          "needs_manual_review",
+                          "created_at",
+                          "updated_at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reconciliation/{actionId}/resolve": {
+      "post": {
+        "tags": [
+          "Reconciliation"
+        ],
+        "summary": "Manually resolve an action stuck in unknown (Approver+)",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "actionId",
+            "in": "path"
+          },
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "outcome": {
+                    "type": "string",
+                    "enum": [
+                      "succeeded",
+                      "failed"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "connector_reference": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "note"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "action_id": {
+                      "type": "string"
+                    },
+                    "execution_state": {
+                      "type": "string",
+                      "enum": [
+                        "succeeded",
+                        "failed"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "action_id",
+                    "execution_state"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Action not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Action is not in the unknown state; nothing to reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/receipts/{id}": {
+      "get": {
+        "tags": [
+          "Receipts"
+        ],
+        "summary": "Get a receipt",
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "AgentBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "receipt_id": {
+                      "type": "string"
+                    },
+                    "receipt_type": {
+                      "type": "string",
+                      "enum": [
+                        "decision",
+                        "execution"
+                      ]
+                    },
+                    "jws": {
+                      "type": "string"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "receipt_id",
+                    "receipt_type",
+                    "jws",
+                    "payload",
+                    "created_at"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Receipt not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/receipts/verify": {
+      "post": {
+        "tags": [
+          "Receipts"
+        ],
+        "summary": "Verify a receipt's JWS (unauthenticated)",
+        "description": "Deliberately unauthenticated -- verification must work for anyone holding a receipt.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "jws": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "jws"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Never collapses validity into one boolean.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "signature_valid": {
+                      "type": "boolean"
+                    },
+                    "issuer_trusted": {
+                      "type": "boolean"
+                    },
+                    "key_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "key_status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "rotated",
+                        "unknown",
+                        "revoked"
+                      ]
+                    },
+                    "payload": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "schema_version": {
+                          "type": "string",
+                          "enum": [
+                            "1"
+                          ]
+                        },
+                        "receipt_type": {
+                          "type": "string",
+                          "enum": [
+                            "decision",
+                            "execution"
+                          ]
+                        },
+                        "receipt_id": {
+                          "type": "string",
+                          "pattern": "^rcpt_[a-zA-Z0-9]{20,}$"
+                        },
+                        "issuer": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "organization_id": {
+                          "type": "string",
+                          "pattern": "^org_[a-zA-Z0-9]{20,}$"
+                        },
+                        "environment": {
+                          "type": "string",
+                          "enum": [
+                            "sandbox",
+                            "production"
+                          ]
+                        },
+                        "action_id": {
+                          "type": "string",
+                          "pattern": "^act_[a-zA-Z0-9]{20,}$"
+                        },
+                        "actor_id": {
+                          "type": "string",
+                          "pattern": "^agt_[a-zA-Z0-9]{20,}$"
+                        },
+                        "principal_id": {
+                          "type": "string",
+                          "pattern": "^usr_[a-zA-Z0-9]{20,}$"
+                        },
+                        "delegation_chain_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                          },
+                          "minItems": 1
+                        },
+                        "action": {
+                          "type": "string",
+                          "enum": [
+                            "refund.create"
+                          ]
+                        },
+                        "resource_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "request_hash": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        },
+                        "policy_version_id": {
+                          "type": "string",
+                          "pattern": "^polv_[a-zA-Z0-9]{20,}$"
+                        },
+                        "policy_hash": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        },
+                        "decision": {
+                          "type": "string",
+                          "enum": [
+                            "ALLOW",
+                            "DENY",
+                            "REQUIRE_APPROVAL"
+                          ]
+                        },
+                        "reason_codes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "GRANT_REVOKED",
+                              "GRANT_EXPIRED",
+                              "GRANT_NOT_FOUND",
+                              "SCOPE_MISMATCH",
+                              "DELEGATION_WIDENING",
+                              "DELEGATION_NOT_ALLOWED",
+                              "DELEGATION_DEPTH_EXCEEDED",
+                              "AMOUNT_LIMIT",
+                              "BUDGET_EXCEEDED",
+                              "APPROVAL_REQUIRED",
+                              "APPROVAL_EXPIRED",
+                              "APPROVAL_REJECTED",
+                              "RESOURCE_MISMATCH",
+                              "STATE_UNAVAILABLE",
+                              "CONNECTOR_UNAVAILABLE",
+                              "IDEMPOTENCY_CONFLICT",
+                              "POLICY_UNAVAILABLE",
+                              "CREDENTIAL_REVOKED",
+                              "INTERNAL_ERROR"
+                            ]
+                          }
+                        },
+                        "approval_id": {
+                          "type": "string",
+                          "nullable": true,
+                          "pattern": "^appr_[a-zA-Z0-9]{20,}$"
+                        },
+                        "outcome": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "received",
+                            "awaiting_approval",
+                            "ready",
+                            "reserved",
+                            "dispatching",
+                            "succeeded",
+                            "failed",
+                            "unknown",
+                            "denied",
+                            "cancelled",
+                            "expired"
+                          ]
+                        },
+                        "connector_reference": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recorded_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "schema_version",
+                        "receipt_type",
+                        "receipt_id",
+                        "issuer",
+                        "organization_id",
+                        "environment",
+                        "action_id",
+                        "actor_id",
+                        "principal_id",
+                        "delegation_chain_ids",
+                        "action",
+                        "resource_id",
+                        "request_hash",
+                        "policy_version_id",
+                        "policy_hash",
+                        "decision",
+                        "reason_codes",
+                        "approval_id",
+                        "outcome",
+                        "connector_reference",
+                        "recorded_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "signature_valid",
+                    "issuer_trusted",
+                    "key_id",
+                    "key_status",
+                    "payload",
+                    "errors"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid verify request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/metrics/summary": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Real aggregates over stored actions/usage_events",
+        "description": "Never a hardcoded number; an organization with no activity reports all zeros.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregates over all recorded actions for this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_actions": {
+                      "type": "number"
+                    },
+                    "allowed": {
+                      "type": "number"
+                    },
+                    "denied": {
+                      "type": "number"
+                    },
+                    "awaiting_approval": {
+                      "type": "number"
+                    },
+                    "succeeded": {
+                      "type": "number"
+                    },
+                    "failed": {
+                      "type": "number"
+                    },
+                    "unknown": {
+                      "type": "number"
+                    },
+                    "execution_success_rate": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "authorization_latency_ms": {
+                      "type": "object",
+                      "properties": {
+                        "p50": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "p95": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "p99": {
+                          "type": "number",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "p50",
+                        "p95",
+                        "p99"
+                      ]
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "total_actions",
+                    "allowed",
+                    "denied",
+                    "awaiting_approval",
+                    "succeeded",
+                    "failed",
+                    "unknown",
+                    "execution_success_rate",
+                    "authorization_latency_ms",
+                    "note"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Tenant-scoped audit event stream (Server-Sent Events)",
+        "description": "text/event-stream, not JSON. Implemented as short-interval polling of this organization's audit_events table. Each SSE `event:` is the audit event name and `data:` is JSON: {id, actor_type, actor_id, metadata, created_at}. Not representable as a normal OpenAPI request/response pair; documented here for discoverability only.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "text/event-stream of audit events for this organization. See the operation description for the per-event shape.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/demo/runs": {
+      "post": {
+        "tags": [
+          "Demo"
+        ],
+        "summary": "Run a demo scenario (Operator+, local/demo mode only)",
+        "description": "scenario_key is one of: eur80_auto_refund, eur350_approval, eur700_denied, prompt_injection_deny, child_cap_rejected, root_revoked_denied, idempotent_replay, idempotency_conflict, receipt_tamper_detected, concurrent_budget_limit, connector_timeout_reconciled, direct_merchant_write_rejected, order_not_owned_denied. Only works inside the seeded Northstar Commerce organization.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scenario_key": {
+                    "type": "string",
+                    "enum": [
+                      "eur80_auto_refund",
+                      "eur350_approval",
+                      "eur700_denied",
+                      "prompt_injection_deny",
+                      "child_cap_rejected",
+                      "root_revoked_denied",
+                      "idempotent_replay",
+                      "idempotency_conflict",
+                      "receipt_tamper_detected",
+                      "concurrent_budget_limit",
+                      "connector_timeout_reconciled",
+                      "direct_merchant_write_rejected",
+                      "order_not_owned_denied"
+                    ]
+                  }
+                },
+                "required": [
+                  "scenario_key"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Run recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "run_id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "succeeded",
+                        "failed"
+                      ]
+                    },
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "step": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "ok": {
+                            "type": "boolean"
+                          },
+                          "detail": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "required": [
+                          "step",
+                          "description",
+                          "ok"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "run_id",
+                    "status",
+                    "steps"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Demo endpoints disabled in production mode.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Wrong organization for the demo lab.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Demo"
+        ],
+        "summary": "History of past demo runs (local/demo mode only)",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Past runs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "runs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "run_id": {
+                            "type": "string"
+                          },
+                          "scenario_key": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "steps": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "step": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "ok": {
+                                  "type": "boolean"
+                                },
+                                "detail": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "nullable": true
+                                  }
+                                }
+                              },
+                              "required": [
+                                "step",
+                                "description",
+                                "ok"
+                              ]
+                            }
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "completed_at": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "run_id",
+                          "scenario_key",
+                          "status",
+                          "steps",
+                          "created_at",
+                          "completed_at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "runs"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/demo/reset": {
+      "post": {
+        "tags": [
+          "Demo"
+        ],
+        "summary": "Clear this org's activity data (Operator+, local/demo mode only)",
+        "description": "Clears actions/receipts/approvals/budgets/jobs; never identity/grants/policy. The authoritative reset path is `pnpm demo:reset`.",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrganizationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOk"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Demo endpoints disabled in production mode.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,20 +1,26 @@
 import { eq } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { actions, approvals, executionJobs } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { actions, approvals, executionJobs } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { evaluate, type EvaluationResult } from "@trustrail/policy-engine";
 import { canonicalActionPayload, canonicalHash, type CreateActionRequest, type ReasonCode } from "@trustrail/contracts";
 import { resolveGrantChain } from "./grantChain.js";
 import { getActivePolicy } from "./policyLookup.js";
-import { getBudgetTargets, reserveBudgets, utcDateString, BudgetExceededError } from "./budget.js";
+import {
+  getBudgetTargets,
+  reserveBudgets,
+  utcDateString,
+  BudgetExceededError,
+  issueReceipt,
+  dispatchAction,
+  type DispatchDeps,
+} from "@trustrail/gateway-core";
 import { checkIdempotency, recordIdempotencyKey, getAction } from "./idempotency.js";
-import { issueReceipt } from "./receiptBuilder.js";
-import { dispatchAction, type DispatchDeps } from "./dispatch.js";
 import type { AgentAuthContext } from "../auth/context.js";
 import { ApiError } from "../http/errors.js";
 import { writeAuditEvent } from "./audit.js";
-import { usageEvents } from "../db/schema.js";
+import { usageEvents } from "@trustrail/db";
 
 export interface SubmitActionDeps extends DispatchDeps {}
 
@@ -63,7 +69,7 @@ async function submitActionInner(
   // Every read of a tenant-scoped table (grants, policies, idempotency
   // records, actions) must happen inside a transaction with tenant context
   // set for row-level security to apply -- see db/rls.sql and
-  // db/client.ts#withTenant. This first pass is read-only and separate from
+  // @trustrail/db's withTenant. This first pass is read-only and separate from
   // the later reservation transaction.
   type FirstPassOutcome =
     | { kind: "conflict" }

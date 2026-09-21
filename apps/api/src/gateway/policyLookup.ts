@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { policyBundles, policyVersions } from "../db/schema.js";
+import type { Db } from "@trustrail/db";
+import { policyBundles, policyVersions } from "@trustrail/db";
 import { policyBundleSchema, type PolicyBundle } from "@trustrail/contracts";
 
 export interface ActivePolicy {

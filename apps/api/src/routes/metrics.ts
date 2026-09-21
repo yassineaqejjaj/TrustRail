@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
 import { userRoute } from "../http/handlers.js";
 
 /**

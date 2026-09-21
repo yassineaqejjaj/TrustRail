@@ -23,6 +23,7 @@ const SCENARIOS = [
   { id: "concurrent_budget_limit", title: "Concurrent refunds against EUR 100 remaining", body: "Expected: at most EUR 100 commits across every concurrent attempt — the shared reservation ledger is authoritative." },
   { id: "connector_timeout_reconciled", title: "Merchant succeeds but the connection times out", body: "Expected: action state 'unknown', reconciled later to 'succeeded' with no duplicate refund and budget held throughout." },
   { id: "direct_merchant_write_rejected", title: "Agent attempts a direct merchant write", body: "Expected: network/auth rejection — the gateway holds the only downstream credential." },
+  { id: "order_not_owned_denied", title: "Refund on someone else's order", body: "Order belongs to a different customer. Expected: DENY with RESOURCE_MISMATCH — ownership is checked even though the amount and policy would otherwise allow it." },
 ];
 
 export default function DemoLabPage() {

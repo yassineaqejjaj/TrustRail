@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { idempotencyRecords, actions } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { idempotencyRecords, actions } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 
 export type IdempotencyCheck =
   | { kind: "new" }

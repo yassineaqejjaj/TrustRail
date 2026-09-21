@@ -1,17 +1,17 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import type { Db } from "../db/client.js";
+import type { Db } from "@trustrail/db";
 import type { AppConfig } from "../config.js";
-import { users, sessions } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import { users, sessions } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { hashPassword, verifyPassword } from "../auth/passwords.js";
 import { generateSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_MS } from "../auth/session.js";
 import { authenticateUserSession, AuthError } from "../auth/context.js";
 import { sendApiError, ApiError } from "../http/errors.js";
 
-const registerSchema = z.object({ email: z.string().email(), password: z.string().min(10).max(200) }).strict();
-const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1).max(200) }).strict();
+export const registerSchema = z.object({ email: z.string().email(), password: z.string().min(10).max(200) }).strict();
+export const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1).max(200) }).strict();
 
 const LOGIN_RATE_LIMIT = { max: 10, timeWindow: "1 minute" };
 

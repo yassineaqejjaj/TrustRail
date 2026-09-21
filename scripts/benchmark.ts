@@ -1,7 +1,7 @@
 import os from "node:os";
 import { loadEnvIntoProcess } from "./lib/env.js";
 import { startLocalPostgres, stopLocalPostgres, isInitialised } from "./lib/localPostgres.js";
-import { getDb, closePool } from "../apps/api/src/db/client.js";
+import { getDb, closePool } from "@trustrail/db";
 import { getActiveSigningKey } from "../apps/api/src/gateway/keys.js";
 import { createMerchantSandboxConnector } from "../apps/api/src/gateway/merchantSandboxConnector.js";
 import { submitAction } from "../apps/api/src/gateway/submitAction.js";

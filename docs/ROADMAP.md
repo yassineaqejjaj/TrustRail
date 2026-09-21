@@ -27,24 +27,46 @@ Roughly ordered by leverage, not urgency:
    through a proper shared package (`docs/DECISIONS.md`). Low risk today,
    but blocks `apps/worker` from ever being deployed as a truly independent
    process/container.
-2. **A real connector-to-principal ownership model.** The merchant sandbox
-   connector currently reports `ownedByPrincipal: true` unconditionally
-   (`apps/api/src/gateway/merchantSandboxConnector.ts`) because the sandbox
-   doesn't model distinct customer identities. A second, intentionally
-   mismatched fixture plus real ownership resolution would let
-   `require_order_ownership` actually deny something in the demo.
+2. **(Done 2026-09-21)** A second, intentionally mismatched fixture
+   (`order_demo_not_owned`, `MISMATCHED_OWNER_CUSTOMER_REF` in
+   `packages/contracts/src/demoFixtures.ts`) now makes
+   `require_order_ownership` a real, demonstrable gate (`order_not_owned_denied`
+   demo scenario) instead of a permanently-true stub. This is a sandbox-only
+   sentinel, not a real per-customer identity mapping — the sandbox still
+   has no data model for that, so every other order remains
+   unconditionally owned. A real connector integration would still need to
+   resolve ownership from the merchant's own customer/account records.
 3. **A push-based event bus for `GET /v1/events`.** Currently short-interval
    polling of `audit_events`, tenant-scoped and correct, but not push-based
    and not horizontally cheap at scale.
-4. **A dedicated reconciliation report/tool** for actions left in `unknown`
-   after a restore or extended outage, beyond relying on the next normal
-   dispatch retry to resolve them.
-5. **OpenAPI generation** from the zod schemas in `packages/contracts`, so
-   `docs/API.md` stops being hand-maintained.
-6. **Anomaly/abuse detection** on agent behavior (e.g. a sudden burst of
-   requests from one credential) — currently, a stolen *active* credential
-   can use its existing grants until a human revokes it; there is no
-   automated detection layer (`docs/THREAT_MODEL.md`).
+4. **(Done 2026-09-21)** A dedicated reconciliation report/tool
+   (`GET /v1/reconciliation`, `POST /v1/reconciliation/:actionId/resolve`,
+   `apps/web`'s Reconciliation page) for actions left in `unknown`. The
+   worker's auto-retry now backs off exponentially and gives up after
+   `MAX_AUTO_RETRY_ATTEMPTS` (8), flagging the job `stuck` instead of
+   retrying forever against a dead connector — a human then resolves the
+   real outcome (confirmed with the merchant directly), which commits or
+   releases the held budget and issues a receipt exactly like an automated
+   resolution would. Covered by `apps/api/test/reconciliation.test.ts`.
+5. **(Done 2026-09-21)** OpenAPI generation from the zod schemas that
+   actually validate each route (`packages/contracts` and
+   `apps/api/src/routes/*.ts`), so `docs/API.md` stops hand-maintaining
+   request/response shapes. `scripts/generate-openapi.ts` (`pnpm
+   generate:openapi`) writes `docs/openapi.json`; `docs/API.md` now points
+   readers there for exact shapes and keeps only the higher-level prose.
+   `GET /v1/events` (Server-Sent Events) isn't representable as a normal
+   JSON request/response pair, so it's documented there in prose only.
+6. **(Done 2026-09-21)** Anomaly detection for a sudden burst of requests
+   from one agent credential (`GET /v1/security/anomalies`, `apps/web`'s
+   Security page). Deliberately a simple fixed-threshold velocity check
+   computed on read, not persisted and not wired into the request path --
+   it can never change whether an action is allowed/denied/held, only
+   surface volume for a human to review. A stolen *active* credential can
+   still use its existing grants until someone revokes it; this doesn't
+   change that, it only makes the volume visible. Covered by
+   `apps/api/test/anomalyDetection.test.ts`. A real follow-up would
+   persist flags and notify a human instead of requiring someone to check
+   this report.
 7. **KMS-backed signing keys.** `apps/api/src/gateway/keys.ts` already
    isolates key access behind `getActiveSigningKey`/`getTrustedKeys`; a real
    KMS integration is a swap behind that seam, not a redesign.

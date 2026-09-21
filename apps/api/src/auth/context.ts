@@ -1,8 +1,8 @@
 import type { FastifyRequest } from "fastify";
 import { eq, and } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { agentCredentials, agents, memberships, sessions, users } from "../db/schema.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { agentCredentials, agents, memberships, sessions, users } from "@trustrail/db";
 import { digestApiKey } from "./apiKeys.js";
 import { hashSessionToken, SESSION_COOKIE_NAME } from "./session.js";
 import type { Role } from "@trustrail/contracts";

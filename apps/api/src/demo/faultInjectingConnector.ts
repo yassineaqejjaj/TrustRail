@@ -1,4 +1,4 @@
-import type { Connector, RefundOutcome } from "../gateway/connector.js";
+import type { Connector, RefundOutcome } from "@trustrail/gateway-core";
 
 /**
  * Demo-only wrapper that makes the "merchant succeeds but connection times
@@ -8,7 +8,7 @@ import type { Connector, RefundOutcome } from "../gateway/connector.js";
  * ever calling the real connector; every subsequent call (a worker retry,
  * or a resubmission) goes through to the real merchant sandbox normally.
  * This exercises the real dispatch/reconciliation code path
- * (src/gateway/dispatch.ts, src/worker/poller.ts) against a genuinely
+ * (@trustrail/gateway-core's dispatch.ts/poller.ts) against a genuinely
  * ambiguous first outcome -- only the connector's response is faked, never
  * the gateway's handling of it.
  *

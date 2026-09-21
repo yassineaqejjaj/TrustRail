@@ -13,6 +13,24 @@ in this document is design/guidance versus tested fact.
 - Demo endpoints (`POST /v1/demo/*`) — allowed in `local`/`demo`, 403 in `production`.
 - Never set `production` without also completing the checklist below.
 
+### Creating the first user in production mode
+
+With open registration disabled, there is no self-serve way to create the
+first organization/user. `scripts/bootstrap-admin.ts` (`pnpm bootstrap:admin`)
+does this directly against the database instead:
+
+```bash
+APP_DATABASE_URL=postgres://trustrail_app:...@host:port/trustrail \
+  pnpm bootstrap:admin -- --email owner@example.com --org "Example Inc" --password 'a strong password'
+```
+
+Omit `--password` to have one generated and printed once (never stored
+anywhere but its hash). It refuses to run if the email already exists, and
+inserts exactly one user/organization/membership/default-policy set —
+nothing else in the database is touched. Run it once per organization you
+need to bootstrap; everyone after the first user of an org can be invited
+normally through `/v1/memberships`.
+
 ## Health checks
 
 - `GET /health/live` — process liveness, no dependencies checked.

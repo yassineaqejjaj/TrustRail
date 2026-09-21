@@ -1,9 +1,9 @@
 import { loadConfig } from "./config.js";
-import { getDb } from "./db/client.js";
+import { getDb } from "@trustrail/db";
 import { buildApp } from "./server.js";
 import { createMerchantSandboxConnector } from "./gateway/merchantSandboxConnector.js";
 import { getActiveSigningKey } from "./gateway/keys.js";
-import { runWorkerForever } from "./worker/poller.js";
+import { runWorkerForever } from "@trustrail/gateway-core";
 import { runBootstrapAndMigrate } from "./db/bootstrapAndMigrate.docker.js";
 
 const config = loadConfig();
@@ -24,6 +24,16 @@ const connector = createMerchantSandboxConnector({ baseUrl: config.MERCHANT_SAND
 async function selfMigrateIfConfigured() {
   if (process.env.POSTGRES_SUPERUSER_PASSWORD && process.env.TRUSTRAIL_MIGRATOR_PASSWORD && process.env.TRUSTRAIL_APP_PASSWORD) {
     await runBootstrapAndMigrate();
+    // The superuser/migrator credentials are only ever needed for this one
+    // bootstrap call. Deleting them from this process's own environment
+    // afterward doesn't change what a platform operator or host-level
+    // compromise could see (they're still in the platform's env var
+    // store), but it does shrink the window in which an RCE *in this
+    // Node process* -- e.g. a future dependency vulnerability -- could
+    // read them out of `process.env` for the remaining lifetime of a
+    // long-running server that otherwise never touches them again.
+    delete process.env.POSTGRES_SUPERUSER_PASSWORD;
+    delete process.env.TRUSTRAIL_MIGRATOR_PASSWORD;
   }
 }
 

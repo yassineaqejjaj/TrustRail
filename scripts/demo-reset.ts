@@ -1,7 +1,7 @@
 import { loadEnvIntoProcess } from "./lib/env.js";
 import { startLocalPostgres, stopLocalPostgres, isInitialised } from "./lib/localPostgres.js";
-import { getDb, closePool } from "../apps/api/src/db/client.js";
-import { organizations } from "../apps/api/src/db/schema.js";
+import { getDb, closePool } from "@trustrail/db";
+import { organizations } from "@trustrail/db";
 import { eq } from "drizzle-orm";
 import { resetDemoActivity } from "../apps/api/src/demo/reset.js";
 import { getDb as getMerchantDb, closePool as closeMerchantPool } from "../apps/merchant-sandbox/src/db/client.js";

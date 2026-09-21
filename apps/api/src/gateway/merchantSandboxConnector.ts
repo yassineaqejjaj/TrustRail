@@ -1,5 +1,5 @@
-import type { Currency } from "@trustrail/contracts";
-import type { Connector, RefundOutcome } from "./connector.js";
+import { MISMATCHED_OWNER_CUSTOMER_REF, type Currency } from "@trustrail/contracts";
+import type { Connector, RefundOutcome } from "@trustrail/gateway-core";
 
 export interface MerchantSandboxConnectorOptions {
   baseUrl: string;
@@ -16,13 +16,21 @@ export interface MerchantSandboxConnectorOptions {
  * `"failed"`, matching the "merchant succeeds but connection times out"
  * demo scenario: the caller cannot tell whether the write landed, so the
  * gateway must keep the budget reservation until reconciliation resolves it
- * (see src/worker/reconcile.ts).
+ * (the worker retries automatically with backoff via
+ * @trustrail/gateway-core's dispatchAction; if it gives up, a human
+ * resolves it via src/gateway/reconciliation.ts).
  *
- * NOTE on order ownership: this synthetic sandbox does not model separate
- * customer identities distinct from the demo principal, so
- * `ownedByPrincipal` is always reported `true` for any order that exists.
- * A real connector integration would resolve this from the merchant's own
- * customer/account records. Documented in docs/BUILD_STATUS.md.
+ * NOTE on order ownership: this synthetic sandbox does not model a real
+ * mapping between TrustRail principals and the merchant's own customer
+ * records, so `ownedByPrincipal` cannot be resolved from actual identity
+ * matching. It reports `true` for every order except the one deliberate
+ * fixture carrying `MISMATCHED_OWNER_CUSTOMER_REF` -- enough for
+ * `require_order_ownership` to be a real, demonstrable gate (see
+ * order_demo_not_owned in packages/contracts/src/demoFixtures.ts) rather
+ * than a permanently-true stub, without claiming a real ownership
+ * resolution this sandbox has no data to support. A real connector
+ * integration would resolve this from the merchant's own customer/account
+ * records. Documented in docs/BUILD_STATUS.md.
  */
 export function createMerchantSandboxConnector(opts: MerchantSandboxConnectorOptions): Connector {
   const timeoutMs = opts.timeoutMs ?? 5000;
@@ -59,7 +67,7 @@ export function createMerchantSandboxConnector(opts: MerchantSandboxConnectorOpt
       }
       return {
         found: true,
-        ownedByPrincipal: true,
+        ownedByPrincipal: result.body.customer_ref !== MISMATCHED_OWNER_CUSTOMER_REF,
         ageDays: result.body.age_days,
         disputed: result.body.disputed,
         remainingAmountMinor: result.body.amount_minor,

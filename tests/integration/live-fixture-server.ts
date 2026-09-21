@@ -19,10 +19,10 @@ import { buildMerchantSandboxApp } from "../../apps/merchant-sandbox/src/server.
 import { createMerchantSandboxConnector } from "../../apps/api/src/gateway/merchantSandboxConnector.js";
 import { seedMerchantSandbox } from "../../apps/merchant-sandbox/src/seed.js";
 import { generateSigningKeyPair } from "../../packages/receipt-verifier/src/index.js";
-import { newId } from "../../apps/api/src/db/ids.js";
+import { newId } from "@trustrail/db";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
-import * as apiSchema from "../../apps/api/src/db/schema.js";
+import * as apiSchema from "@trustrail/db";
 import * as merchantSchema from "../../apps/merchant-sandbox/src/db/schema.js";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

@@ -1,19 +1,25 @@
 import { eq, sql } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { actions, approvals, executionJobs } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { actions, approvals, executionJobs } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { evaluate } from "@trustrail/policy-engine";
 import type { ReasonCode } from "@trustrail/contracts";
 import { resolveGrantChain } from "./grantChain.js";
 import { getActivePolicy } from "./policyLookup.js";
-import { getBudgetTargets, reserveBudgets, utcDateString, BudgetExceededError } from "./budget.js";
-import { issueReceipt } from "./receiptBuilder.js";
-import { dispatchAction, type DispatchDeps } from "./dispatch.js";
+import {
+  getBudgetTargets,
+  reserveBudgets,
+  utcDateString,
+  BudgetExceededError,
+  issueReceipt,
+  dispatchAction,
+  type DispatchDeps,
+  type Connector,
+} from "@trustrail/gateway-core";
 import type { UserAuthContext } from "../auth/context.js";
 import { ApiError } from "../http/errors.js";
 import { writeAuditEvent } from "./audit.js";
-import type { Connector } from "./connector.js";
 
 export interface ApprovalDecisionDeps extends DispatchDeps {
   connector: Connector;

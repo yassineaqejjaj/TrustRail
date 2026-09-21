@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
 import {
   organizations,
   users,
@@ -10,8 +10,8 @@ import {
   grants,
   policyBundles,
   policyVersions,
-} from "../db/schema.js";
-import { newId } from "../db/ids.js";
+} from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { hashPassword } from "../auth/passwords.js";
 import { generateApiKey } from "../auth/apiKeys.js";
 import {

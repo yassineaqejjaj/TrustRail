@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { actions, executionJobs } from "../db/schema.js";
-import { withTenant } from "../db/client.js";
+import type { Db } from "@trustrail/db";
+import { actions, executionJobs } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
 import { commitReservations, releaseReservations } from "./budget.js";
 import type { Connector } from "./connector.js";
-import type { ActiveSigningKey } from "./keys.js";
+import type { ActiveSigningKey } from "./signing.js";
 import { issueReceipt } from "./receiptBuilder.js";
 import { assertTransition } from "@trustrail/policy-engine";
 import type { ExecutionState } from "@trustrail/contracts";
@@ -14,6 +14,14 @@ export interface DispatchDeps {
   signingKey: ActiveSigningKey;
   issuer: string;
 }
+
+/**
+ * After this many attempts still resolving to `unknown`, stop the
+ * worker's automatic retry (which would otherwise hammer a downed
+ * connector every few seconds forever) and hand the action to a human via
+ * the reconciliation report (routes/reconciliation.ts) instead.
+ */
+export const MAX_AUTO_RETRY_ATTEMPTS = 8;
 
 /**
  * Performs (or retries) the actual downstream dispatch for an action that
@@ -83,13 +91,26 @@ export async function dispatchAction(db: Db, deps: DispatchDeps, organizationId:
 
     const jobRows = await tx.select().from(executionJobs).where(eq(executionJobs.actionId, actionId)).limit(1);
     const previousAttempts = jobRows[0]?.attemptCount ?? 0;
+    const attemptCount = previousAttempts + 1;
+    const stillRetrying = finalState === "unknown" && attemptCount < MAX_AUTO_RETRY_ATTEMPTS;
+    // Backoff grows with each attempt (capped at 5 minutes) rather than a
+    // fixed 5s, so a genuinely down connector isn't hammered at a constant
+    // rate while we wait to see if it recovers.
+    const backoffMs = Math.min(5000 * 2 ** previousAttempts, 5 * 60 * 1000);
     await tx
       .update(executionJobs)
       .set({
-        status: finalState === "unknown" ? "pending" : finalState === "succeeded" ? "done" : "failed",
-        attemptCount: previousAttempts + 1,
-        lastError: finalState === "failed" ? "connector rejected the refund" : finalState === "unknown" ? "connector request timed out" : null,
-        nextAttemptAt: finalState === "unknown" ? new Date(Date.now() + 5000) : new Date(),
+        status: finalState === "succeeded" ? "done" : finalState === "failed" ? "failed" : stillRetrying ? "pending" : "stuck",
+        attemptCount,
+        lastError:
+          finalState === "failed"
+            ? "connector rejected the refund"
+            : finalState === "unknown"
+              ? stillRetrying
+                ? "connector request timed out"
+                : `connector request timed out after ${attemptCount} attempts -- needs manual reconciliation`
+              : null,
+        nextAttemptAt: stillRetrying ? new Date(Date.now() + backoffMs) : new Date(),
         updatedAt: new Date(),
       })
       .where(eq(executionJobs.actionId, actionId));

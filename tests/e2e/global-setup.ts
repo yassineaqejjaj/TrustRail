@@ -22,10 +22,10 @@ import { generateSigningKeyPair } from "@trustrail/receipt-verifier";
 
 import { bootstrapRolesAndDatabase } from "../../apps/api/src/db/roles.js";
 import { runMigrations } from "../../apps/api/src/db/migrate.js";
-import * as apiSchema from "../../apps/api/src/db/schema.js";
+import * as apiSchema from "@trustrail/db";
 import { buildApp } from "../../apps/api/src/server.js";
 import { createMerchantSandboxConnector } from "../../apps/api/src/gateway/merchantSandboxConnector.js";
-import { newId } from "../../apps/api/src/db/ids.js";
+import { newId } from "@trustrail/db";
 import { runMerchantMigrations } from "../../apps/merchant-sandbox/src/db/migrate.js";
 import * as merchantSchema from "../../apps/merchant-sandbox/src/db/schema.js";
 import { buildMerchantSandboxApp } from "../../apps/merchant-sandbox/src/server.js";
@@ -42,6 +42,8 @@ export interface E2eState {
   gatewaySecret: string;
   /** Lets test files seed merchant orders for whatever org they create, via seedMerchantSandbox. */
   merchantMigratorUrl: string;
+  /** Lets test files connect directly to the api's own database (e.g. to call seedNorthstarCommerce for Demo Lab specs) with the same `trustrail_app` role the running api server itself uses. */
+  apiDatabaseUrl: string;
 }
 
 export default async function globalSetup() {
@@ -90,7 +92,11 @@ export default async function globalSetup() {
     CORS_ORIGIN: "http://127.0.0.1:3100", isProduction: false, allowDemoEndpoints: true,
   };
   const gatewayDeps = { connector, signingKey: { kid: keys.kid, privateJwk: keys.privateJwk }, issuer: config.RECEIPT_ISSUER };
-  apiApp = buildApp({ db: apiDb, config: config as never, connector, gatewayDeps });
+  // Mirrors apps/api/src/index.ts's own construction exactly -- without
+  // this, buildApp() never registers /v1/demo/* at all (it's conditional
+  // on demoDeps being passed), which is what a Demo Lab e2e spec needs.
+  const demoDeps = { scenarioDeps: { deps: gatewayDeps, merchantBaseUrl, gatewaySecret } };
+  apiApp = buildApp({ db: apiDb, config: config as never, connector, gatewayDeps, demoDeps });
   await apiApp.listen({ port: 0, host: "127.0.0.1" });
   const apiAddr = apiApp.server.address();
   const apiBaseUrl = `http://127.0.0.1:${typeof apiAddr === "object" && apiAddr ? apiAddr.port : 0}`;
@@ -109,7 +115,7 @@ export default async function globalSetup() {
   const webBaseUrl = `http://127.0.0.1:${webPort}`;
   await waitForHttp(`${webBaseUrl}/`, 60_000);
 
-  const state: E2eState = { apiBaseUrl, webBaseUrl, merchantBaseUrl, gatewaySecret, merchantMigratorUrl };
+  const state: E2eState = { apiBaseUrl, webBaseUrl, merchantBaseUrl, gatewaySecret, merchantMigratorUrl, apiDatabaseUrl: appUrl };
   writeFileSync(STATE_PATH, JSON.stringify(state, null, 2));
 
   // Playwright calls the function a globalSetup returns as teardown, once

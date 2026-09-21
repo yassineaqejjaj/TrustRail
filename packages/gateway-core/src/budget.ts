@@ -1,9 +1,9 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { GrantChainLink } from "@trustrail/policy-engine";
 import type { PolicyBundle } from "@trustrail/contracts";
-import type { Db } from "../db/client.js";
-import { budgetReservations, budgetWindows } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { budgetReservations, budgetWindows } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 
 export interface BudgetTarget {
   key: string;

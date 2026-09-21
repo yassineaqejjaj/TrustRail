@@ -1,18 +1,25 @@
 import { loadEnvIntoProcess } from "./lib/env.js";
 import { startLocalPostgres, stopLocalPostgres, isInitialised } from "./lib/localPostgres.js";
-import { getDb, closePool } from "../apps/api/src/db/client.js";
+import { getDb, closePool } from "@trustrail/db";
 import { seedNorthstarCommerce, DEMO_PASSWORD } from "../apps/api/src/demo/seedNorthstar.js";
 import { getDb as getMerchantDb, closePool as closeMerchantPool } from "../apps/merchant-sandbox/src/db/client.js";
 import { seedMerchantSandbox } from "../apps/merchant-sandbox/src/seed.js";
 import { DEMO_USERS } from "@trustrail/contracts";
 
 async function main() {
-  loadEnvIntoProcess();
-  if (!isInitialised()) {
-    console.error("Local database is not set up yet. Run: pnpm setup:local");
-    process.exit(1);
+  // If APP_DATABASE_URL/MERCHANT_DATABASE_URL are already set (e.g. by the
+  // caller's shell, to point at a remote database such as a Railway
+  // deployment), skip local Postgres entirely -- loadEnvIntoProcess never
+  // overwrites an already-set var, so this is safe to call either way.
+  const remoteMode = Boolean(process.env.APP_DATABASE_URL && process.env.MERCHANT_DATABASE_URL);
+  if (!remoteMode) {
+    loadEnvIntoProcess();
+    if (!isInitialised()) {
+      console.error("Local database is not set up yet. Run: pnpm setup:local");
+      process.exit(1);
+    }
   }
-  const { owns: ownsLocalPg } = await startLocalPostgres();
+  const { owns: ownsLocalPg } = remoteMode ? { owns: false } : await startLocalPostgres();
   try {
     const db = getDb();
     const result = await seedNorthstarCommerce(db);

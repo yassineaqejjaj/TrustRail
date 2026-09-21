@@ -34,6 +34,19 @@ export interface DemoOrderFixture {
   placedDaysAgo: number;
 }
 
+/**
+ * The sandbox has no real per-customer identity system distinct from a
+ * TrustRail organization -- every other fixture order is treated as owned
+ * by whichever principal requests it (docs/BUILD_STATUS.md; roadmap item
+ * "a real connector-to-principal ownership model"). This one sentinel
+ * customerRef is the deliberate exception: MerchantSandboxConnector
+ * reports any order carrying it as NOT owned, so `require_order_ownership`
+ * has a real, demonstrable case to deny instead of being permanently
+ * true. It is not a general identity-mapping solution -- see
+ * apps/api/src/gateway/merchantSandboxConnector.ts.
+ */
+export const MISMATCHED_OWNER_CUSTOMER_REF = "cust_other_customer_not_yours";
+
 export const DEMO_ORDERS: DemoOrderFixture[] = [
   { id: "order_demo_101", customerRef: "cust_101", amountMinor: 20_000, currency: "EUR", originalPaymentDestination: "card_tok_101", disputed: false, placedDaysAgo: 3 },
   { id: "order_demo_102", customerRef: "cust_102", amountMinor: 40_000, currency: "EUR", originalPaymentDestination: "card_tok_102", disputed: false, placedDaysAgo: 5 },
@@ -49,4 +62,5 @@ export const DEMO_ORDERS: DemoOrderFixture[] = [
   { id: "order_demo_112", customerRef: "cust_112", amountMinor: 20_000, currency: "EUR", originalPaymentDestination: "card_tok_112", disputed: false, placedDaysAgo: 1 },
   { id: "order_demo_disputed", customerRef: "cust_disputed", amountMinor: 20_000, currency: "EUR", originalPaymentDestination: "card_tok_disputed", disputed: true, placedDaysAgo: 2 },
   { id: "order_demo_stale", customerRef: "cust_stale", amountMinor: 20_000, currency: "EUR", originalPaymentDestination: "card_tok_stale", disputed: false, placedDaysAgo: 90 },
+  { id: "order_demo_not_owned", customerRef: MISMATCHED_OWNER_CUSTOMER_REF, amountMinor: 20_000, currency: "EUR", originalPaymentDestination: "card_tok_not_owned", disputed: false, placedDaysAgo: 2 },
 ];

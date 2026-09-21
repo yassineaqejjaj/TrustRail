@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { and, desc, eq, lt, gte, lte } from "drizzle-orm";
 import { z } from "zod";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { actions, receipts, approvals } from "../db/schema.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { actions, receipts, approvals } from "@trustrail/db";
 import { agentRoute, userRoute, handleRouteError } from "../http/handlers.js";
 import { authenticateAgent, authenticateUserWithOrg } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
@@ -12,7 +12,7 @@ import { submitAction, type SubmitActionDeps } from "../gateway/submitAction.js"
 
 const TERMINAL_STATES = new Set(["succeeded", "failed", "denied", "cancelled", "expired"]);
 
-const listQuerySchema = z.object({
+export const listQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25),
   cursor: z.string().optional(),
   agent_id: z.string().optional(),

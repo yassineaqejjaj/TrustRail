@@ -1,14 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { organizations, memberships, policyBundles, policyVersions } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { organizations, memberships, policyBundles, policyVersions } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { sessionRoute } from "../http/handlers.js";
 import { DEFAULT_POLICY_BUNDLE } from "@trustrail/contracts";
 import { canonicalHash } from "@trustrail/contracts";
 
-const createOrgSchema = z.object({ name: z.string().min(1).max(200) }).strict();
+export const createOrgSchema = z.object({ name: z.string().min(1).max(200) }).strict();
 
 /**
  * Creating an organization makes the caller its Owner and seeds a

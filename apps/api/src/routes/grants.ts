@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { grants, memberships } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { grants, memberships } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { authenticateUserWithOrg, authenticateAgent, requireRole, type UserAuthContext, type AgentAuthContext } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
 import { handleRouteError } from "../http/handlers.js";

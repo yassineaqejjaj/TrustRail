@@ -1,14 +1,12 @@
 import { desc, eq } from "drizzle-orm";
 import { readFileSync } from "node:fs";
 import type { JWK } from "jose";
-import type { Db } from "../db/client.js";
-import { signingKeys } from "../db/schema.js";
+import type { Db } from "@trustrail/db";
+import { signingKeys } from "@trustrail/db";
 import type { TrustedKey } from "@trustrail/receipt-verifier";
+import type { ActiveSigningKey } from "@trustrail/gateway-core";
 
-export interface ActiveSigningKey {
-  kid: string;
-  privateJwk: JWK;
-}
+export type { ActiveSigningKey };
 
 /**
  * Signing keys: the database stores only a public JWK and a *reference* to

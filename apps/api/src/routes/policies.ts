@@ -1,19 +1,19 @@
 import type { FastifyInstance } from "fastify";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { policyBundles, policyVersions } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { policyBundles, policyVersions } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { userRoute } from "../http/handlers.js";
 import { requireRole } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
 import { policyBundleSchema, canonicalHash, ENVIRONMENTS } from "@trustrail/contracts";
 import { writeAuditEvent } from "../gateway/audit.js";
 
-const createPolicyDraftSchema = z.object({ environment: z.enum(ENVIRONMENTS), bundle: policyBundleSchema }).strict();
-const addVersionSchema = z.object({ bundle: policyBundleSchema, change_reason: z.string().max(500).default("") }).strict();
-const publishSchema = z.object({ version_id: z.string(), expected_revision: z.number().int().min(0), change_reason: z.string().max(500).default("") }).strict();
+export const createPolicyDraftSchema = z.object({ environment: z.enum(ENVIRONMENTS), bundle: policyBundleSchema }).strict();
+export const addVersionSchema = z.object({ bundle: policyBundleSchema, change_reason: z.string().max(500).default("") }).strict();
+export const publishSchema = z.object({ version_id: z.string(), expected_revision: z.number().int().min(0), change_reason: z.string().max(500).default("") }).strict();
 
 export function registerPolicyRoutes(app: FastifyInstance, db: Db) {
   app.get(

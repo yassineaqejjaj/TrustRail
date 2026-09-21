@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { Db } from "../db/client.js";
+import type { Db } from "@trustrail/db";
 
 export function registerHealthRoutes(app: FastifyInstance, db: Db) {
   app.get("/health/live", async () => ({ status: "ok" }));

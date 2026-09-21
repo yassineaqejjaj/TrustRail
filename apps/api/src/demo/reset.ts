@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
 import {
   actions,
   receipts,
@@ -12,7 +12,7 @@ import {
   usageEvents,
   auditEvents,
   demoRuns,
-} from "../db/schema.js";
+} from "@trustrail/db";
 
 /**
  * Clears only this organization's activity/transactional data -- never

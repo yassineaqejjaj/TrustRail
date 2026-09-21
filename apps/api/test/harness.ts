@@ -8,12 +8,12 @@ import type { FastifyInstance } from "fastify";
 import { startEphemeralPostgres, type EphemeralPostgres } from "@trustrail/test-support";
 import { bootstrapRolesAndDatabase, applyRlsAndGrants } from "../src/db/roles.js";
 import { runMigrations } from "../src/db/migrate.js";
-import * as schema from "../src/db/schema.js";
+import * as schema from "@trustrail/db";
 import { buildApp } from "../src/server.js";
 import type { AppConfig } from "../src/config.js";
 import { createMerchantSandboxConnector } from "../src/gateway/merchantSandboxConnector.js";
 import { generateSigningKeyPair } from "@trustrail/receipt-verifier";
-import { newId } from "../src/db/ids.js";
+import { newId } from "@trustrail/db";
 import { buildMerchantSandboxApp } from "../../merchant-sandbox/src/server.js";
 import { runMerchantMigrations } from "../../merchant-sandbox/src/db/migrate.js";
 import { drizzle as drizzleMerchant } from "drizzle-orm/node-postgres";
@@ -29,6 +29,7 @@ export interface TestHarness {
   merchantBaseUrl: string;
   gatewaySecret: string;
   config: AppConfig;
+  signingKey: { kid: string; privateJwk: object };
   seedMerchantOrders(organizationId: string): Promise<void>;
   teardown(): Promise<void>;
 }
@@ -105,6 +106,7 @@ export async function setupTestHarness(): Promise<TestHarness> {
     merchantBaseUrl,
     gatewaySecret,
     config,
+    signingKey: { kid: keys.kid, privateJwk: keys.privateJwk },
     async seedMerchantOrders(organizationId: string) {
       await seedMerchantSandbox(merchantDb, organizationId);
     },

@@ -11,6 +11,8 @@ import {
   Activity,
   ClipboardCheck,
   FileCheck2,
+  AlertOctagon,
+  ShieldAlert,
   FlaskConical,
   Code2,
   Settings,
@@ -34,7 +36,9 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/activity", label: "Activity", icon: Activity },
       { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
+      { href: "/reconciliation", label: "Reconciliation", icon: AlertOctagon },
       { href: "/receipts", label: "Receipts", icon: FileCheck2 },
+      { href: "/security", label: "Security", icon: ShieldAlert },
     ],
   },
   {

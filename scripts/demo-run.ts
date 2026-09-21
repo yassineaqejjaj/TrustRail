@@ -1,6 +1,6 @@
 import { loadEnvIntoProcess } from "./lib/env.js";
 import { startLocalPostgres, stopLocalPostgres, isInitialised } from "./lib/localPostgres.js";
-import { getDb, closePool } from "../apps/api/src/db/client.js";
+import { getDb, closePool } from "@trustrail/db";
 import { getActiveSigningKey } from "../apps/api/src/gateway/keys.js";
 import { createMerchantSandboxConnector } from "../apps/api/src/gateway/merchantSandboxConnector.js";
 import { seedNorthstarCommerce } from "../apps/api/src/demo/seedNorthstar.js";

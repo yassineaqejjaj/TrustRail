@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { receipts } from "../db/schema.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { receipts } from "@trustrail/db";
 import { handleRouteError } from "../http/handlers.js";
 import { authenticateAgent, authenticateUserWithOrg } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";

@@ -50,3 +50,44 @@ jobs:
 
       - name: End-to-end tests (onboarding, first refund, denial, approval, receipt verification)
         run: pnpm test:e2e
+
+  publish-images:
+    # Only on a real push to main, never for PRs (an untrusted PR shouldn't
+    # be able to publish an image under this repo's name), and only after
+    # verify passes -- gives every deploy target (Railway, or anywhere
+    # else) a tagged, provenanced image to pull instead of only ever
+    # deploying straight from source.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - image: api
+            dockerfile: apps/api/Dockerfile
+          - image: merchant-sandbox
+            dockerfile: apps/merchant-sandbox/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/trustrail-${{ matrix.image }}:latest
+            ghcr.io/${{ github.repository_owner }}/trustrail-${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

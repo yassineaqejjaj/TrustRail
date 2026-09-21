@@ -2,12 +2,11 @@
 # Multi-stage build for @trustrail/api. Built from the monorepo root
 # context (see infra/docker-compose.yml) because it depends on workspace
 # packages (@trustrail/contracts, @trustrail/policy-engine,
-# @trustrail/receipt-verifier).
+# @trustrail/receipt-verifier, @trustrail/db, @trustrail/gateway-core).
 #
-# NOT executed on the machine this was authored on (no Docker available --
-# see docs/DECISIONS.md and docs/BUILD_STATUS.md). Treat this as a
-# reviewed-but-unverified starting point, not a finished, battle-tested
-# image.
+# Actually built and run for real on Railway (2026-09-21) and, separately,
+# via Docker Compose (docs/BUILD_STATUS.md) -- not a reviewed-but-unverified
+# starting point.
 
 FROM node:20-slim AS base
 RUN corepack enable
@@ -25,6 +24,8 @@ COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/policy-engine/package.json packages/policy-engine/package.json
 COPY packages/receipt-verifier/package.json packages/receipt-verifier/package.json
 COPY packages/test-support/package.json packages/test-support/package.json
+COPY packages/db/package.json packages/db/package.json
+COPY packages/gateway-core/package.json packages/gateway-core/package.json
 COPY apps/api/package.json apps/api/package.json
 # apps/merchant-sandbox's package.json is needed too: the migrate
 # service's entrypoint (src/db/bootstrapAndMigrate.docker.ts) imports its
@@ -37,11 +38,15 @@ FROM deps AS build
 COPY packages/contracts packages/contracts
 COPY packages/policy-engine packages/policy-engine
 COPY packages/receipt-verifier packages/receipt-verifier
+COPY packages/db packages/db
+COPY packages/gateway-core packages/gateway-core
 COPY apps/api apps/api
 COPY apps/merchant-sandbox apps/merchant-sandbox
 RUN pnpm --filter @trustrail/contracts run build \
  && pnpm --filter @trustrail/policy-engine run build \
  && pnpm --filter @trustrail/receipt-verifier run build \
+ && pnpm --filter @trustrail/db run build \
+ && pnpm --filter @trustrail/gateway-core run build \
  && pnpm --filter @trustrail/merchant-sandbox run build \
  && pnpm --filter @trustrail/api run build
 

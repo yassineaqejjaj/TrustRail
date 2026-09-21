@@ -1,9 +1,9 @@
 import { eq, and, lte } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { organizations, executionJobs } from "../db/schema.js";
-import { dispatchAction, type DispatchDeps } from "../gateway/dispatch.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { organizations, executionJobs } from "@trustrail/db";
+import { dispatchAction, type DispatchDeps } from "./dispatch.js";
 
 /**
  * The worker has no elevated database role -- it uses the exact same

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { memberships, organizations } from "../db/schema.js";
+import type { Db } from "@trustrail/db";
+import { memberships, organizations } from "@trustrail/db";
 import { sessionRoute } from "../http/handlers.js";
 
 export function registerMeRoutes(app: FastifyInstance, db: Db) {

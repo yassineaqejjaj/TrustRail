@@ -13,10 +13,10 @@ import { randomBytes } from "node:crypto";
 
 import { bootstrapRolesAndDatabase } from "../../../apps/api/src/db/roles.js";
 import { runMigrations } from "../../../apps/api/src/db/migrate.js";
-import * as apiSchema from "../../../apps/api/src/db/schema.js";
+import * as apiSchema from "@trustrail/db";
 import { buildApp } from "../../../apps/api/src/server.js";
 import { createMerchantSandboxConnector } from "../../../apps/api/src/gateway/merchantSandboxConnector.js";
-import { newId } from "../../../apps/api/src/db/ids.js";
+import { newId } from "@trustrail/db";
 import { runMerchantMigrations } from "../../../apps/merchant-sandbox/src/db/migrate.js";
 import * as merchantSchema from "../../../apps/merchant-sandbox/src/db/schema.js";
 import { buildMerchantSandboxApp } from "../../../apps/merchant-sandbox/src/server.js";

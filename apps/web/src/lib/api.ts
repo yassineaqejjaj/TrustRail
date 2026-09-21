@@ -12,6 +12,8 @@ import type {
   OrgMembershipRow,
   PolicyBundleWithVersions,
   ReceiptGetResponse,
+  ReconciliationItem,
+  AgentActivityAnomaly,
   ReceiptVerificationResult,
   SimulationResult,
 } from "./types";
@@ -131,6 +133,20 @@ export const approvalsApi = {
       `/v1/approvals/${id}/reject`,
       { method: "POST", orgId, body: { reason } }
     ),
+};
+
+export const reconciliationApi = {
+  list: (orgId: string) => apiFetch<{ items: ReconciliationItem[] }>("/v1/reconciliation", { orgId }),
+  resolve: (orgId: string, actionId: string, outcome: "succeeded" | "failed", note: string, connectorReference?: string) =>
+    apiFetch<{ status: string; action_id: string; execution_state: ExecutionState }>(`/v1/reconciliation/${actionId}/resolve`, {
+      method: "POST",
+      orgId,
+      body: { outcome, note, ...(connectorReference ? { connector_reference: connectorReference } : {}) },
+    }),
+};
+
+export const securityApi = {
+  anomalies: (orgId: string) => apiFetch<{ anomalies: AgentActivityAnomaly[] }>("/v1/security/anomalies", { orgId }),
 };
 
 export const receiptsApi = {

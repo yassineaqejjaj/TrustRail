@@ -1,17 +1,17 @@
 import type { FastifyInstance } from "fastify";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import type { Db } from "../db/client.js";
-import { withTenant } from "../db/client.js";
-import { memberships, users } from "../db/schema.js";
-import { newId } from "../db/ids.js";
+import type { Db } from "@trustrail/db";
+import { withTenant } from "@trustrail/db";
+import { memberships, users } from "@trustrail/db";
+import { newId } from "@trustrail/db";
 import { userRoute } from "../http/handlers.js";
 import { requireRole } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
 import { ROLES } from "@trustrail/contracts";
 import { writeAuditEvent } from "../gateway/audit.js";
 
-const addMembershipSchema = z.object({ email: z.string().email(), role: z.enum(ROLES) }).strict();
+export const addMembershipSchema = z.object({ email: z.string().email(), role: z.enum(ROLES) }).strict();
 
 /**
  * Not listed as its own row in docs/PRODUCT_SPEC.md section 11's endpoint

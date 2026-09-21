@@ -3,7 +3,7 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
-import type { Db } from "./db/client.js";
+import type { Db } from "@trustrail/db";
 import type { AppConfig } from "./config.js";
 import { parseJsonStrict, StrictJsonError } from "./http/strictJson.js";
 import { registerHealthRoutes } from "./routes/health.js";
@@ -21,9 +21,11 @@ import { registerSimulationRoutes } from "./routes/simulations.js";
 import { registerMetricsRoutes } from "./routes/metrics.js";
 import { registerEventRoutes } from "./routes/events.js";
 import { registerDemoRoutes, type DemoRouteDeps } from "./routes/demo.js";
+import { registerReconciliationRoutes } from "./routes/reconciliation.js";
+import { registerSecurityRoutes } from "./routes/security.js";
 import type { SubmitActionDeps } from "./gateway/submitAction.js";
 import type { ApprovalDecisionDeps } from "./gateway/approvalResume.js";
-import type { Connector } from "./gateway/connector.js";
+import type { Connector } from "@trustrail/gateway-core";
 import { CSRF_HEADER_NAME, SESSION_COOKIE_NAME } from "./auth/session.js";
 
 export interface BuildAppOptions {
@@ -118,6 +120,8 @@ export function buildApp(opts: BuildAppOptions): FastifyInstance {
   registerSimulationRoutes(app, opts.db, opts.connector);
   registerMetricsRoutes(app, opts.db);
   registerEventRoutes(app, opts.db);
+  registerReconciliationRoutes(app, opts.db, opts.gatewayDeps);
+  registerSecurityRoutes(app, opts.db);
   if (opts.demoDeps) {
     registerDemoRoutes(app, opts.db, opts.config, opts.demoDeps);
   }

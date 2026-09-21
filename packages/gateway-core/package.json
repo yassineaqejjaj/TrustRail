@@ -1,0 +1,31 @@
+{
+  "name": "@trustrail/gateway-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'no lint configured for gateway-core'",
+    "test": "echo 'no tests for gateway-core'"
+  },
+  "dependencies": {
+    "@trustrail/contracts": "workspace:*",
+    "@trustrail/db": "workspace:*",
+    "@trustrail/policy-engine": "workspace:*",
+    "@trustrail/receipt-verifier": "workspace:*",
+    "drizzle-orm": "^0.36.4",
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
