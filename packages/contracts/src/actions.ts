@@ -4,7 +4,8 @@ import { amountMinorSchema, currencySchema } from "./money.js";
 import { ACTIONS } from "./enums.js";
 
 const grantId = idSchema(PREFIXES.grant);
-const connectorId = idSchema(PREFIXES.connector);
+// See grants.ts: connector IDs are configured slugs, not opaque generated IDs.
+const connectorId = z.string().regex(/^[a-z][a-z0-9_]{1,63}$/, "connector_id must be a lowercase slug");
 
 /**
  * Payload accepted by POST /v1/actions, authenticated by the subject

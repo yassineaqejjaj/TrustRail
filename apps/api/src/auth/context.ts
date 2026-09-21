@@ -1,6 +1,7 @@
 import type { FastifyRequest } from "fastify";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import type { Db } from "../db/client.js";
+import { withTenant } from "../db/client.js";
 import { agentCredentials, agents, memberships, sessions, users } from "../db/schema.js";
 import { digestApiKey } from "./apiKeys.js";
 import { hashSessionToken, SESSION_COOKIE_NAME } from "./session.js";
@@ -52,41 +53,37 @@ export async function authenticateAgent(db: Db, req: FastifyRequest): Promise<Ag
   const secret = header.slice("Bearer ".length).trim();
   const digest = digestApiKey(secret);
 
-  const rows = await db
-    .select({
-      credentialId: agentCredentials.id,
-      status: agentCredentials.status,
-      expiresAt: agentCredentials.expiresAt,
-      agentId: agents.id,
-      agentStatus: agents.status,
-      organizationId: agents.organizationId,
-      environment: agentCredentials.environment,
-    })
-    .from(agentCredentials)
-    .innerJoin(agents, eq(agentCredentials.agentId, agents.id))
-    .where(eq(agentCredentials.secretDigest, digest))
-    .limit(1);
-
-  const row = rows[0];
-  if (!row) {
+  // agent_credentials is intentionally NOT row-level-security scoped (like
+  // `sessions`): authenticating a bearer credential is exactly the
+  // bootstrapping step where the organization isn't known yet, so this one
+  // lookup is by digest alone across all tenants. The organization ID it
+  // yields is then treated as trusted (it came from a cryptographic digest
+  // match, not a caller-supplied field) and used to open a normal
+  // RLS-scoped read of the `agents` table below -- see db/rls.sql.
+  const credRows = await db.select().from(agentCredentials).where(eq(agentCredentials.secretDigest, digest)).limit(1);
+  const cred = credRows[0];
+  if (!cred) {
     throw new AuthError(401, "UNAUTHORIZED", "invalid credential");
   }
-  if (row.status !== "active") {
+  if (cred.status !== "active") {
     throw new AuthError(401, "CREDENTIAL_REVOKED", "credential is no longer active");
   }
-  if (row.expiresAt && row.expiresAt.getTime() <= Date.now()) {
+  if (cred.expiresAt && cred.expiresAt.getTime() <= Date.now()) {
     throw new AuthError(401, "CREDENTIAL_REVOKED", "credential has expired");
   }
-  if (row.agentStatus !== "active") {
+
+  const agentRows = await withTenant(db, cred.organizationId, (tx) => tx.select().from(agents).where(eq(agents.id, cred.agentId)).limit(1));
+  const agent = agentRows[0];
+  if (!agent || agent.status !== "active") {
     throw new AuthError(401, "CREDENTIAL_REVOKED", "agent is not active");
   }
 
   return {
     kind: "agent",
-    agentId: row.agentId,
-    organizationId: row.organizationId,
-    environment: row.environment,
-    credentialId: row.credentialId,
+    agentId: agent.id,
+    organizationId: cred.organizationId,
+    environment: cred.environment,
+    credentialId: cred.id,
   };
 }
 

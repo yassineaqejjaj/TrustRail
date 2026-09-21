@@ -8,8 +8,14 @@
 do $$
 declare
   tbl text;
+  -- agent_credentials is deliberately excluded: authenticating a bearer
+  -- credential is a cross-tenant lookup by digest (the organization isn't
+  -- known yet), exactly like `sessions` for user login. See
+  -- src/auth/context.ts#authenticateAgent. Every route that lists or
+  -- mutates credentials explicitly filters by organization_id in its WHERE
+  -- clause regardless.
   tenant_tables text[] := array[
-    'agents', 'agent_credentials', 'grants', 'policy_bundles', 'policy_versions',
+    'agents', 'grants', 'policy_bundles', 'policy_versions',
     'connectors', 'actions', 'idempotency_records', 'approvals',
     'budget_windows', 'budget_reservations', 'execution_jobs', 'receipts',
     'audit_events', 'usage_events', 'demo_runs'

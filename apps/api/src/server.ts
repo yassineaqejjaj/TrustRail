@@ -10,6 +10,7 @@ import { registerHealthRoutes } from "./routes/health.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerOrganizationRoutes } from "./routes/organizations.js";
 import { registerMeRoutes } from "./routes/me.js";
+import { registerMembershipRoutes } from "./routes/memberships.js";
 import { registerAgentRoutes } from "./routes/agents.js";
 import { registerGrantRoutes } from "./routes/grants.js";
 import { registerPolicyRoutes } from "./routes/policies.js";
@@ -77,6 +78,7 @@ export function buildApp(opts: BuildAppOptions): FastifyInstance {
   registerAuthRoutes(app, opts.db, opts.config);
   registerOrganizationRoutes(app, opts.db);
   registerMeRoutes(app, opts.db);
+  registerMembershipRoutes(app, opts.db);
   registerAgentRoutes(app, opts.db);
   registerGrantRoutes(app, opts.db);
   registerPolicyRoutes(app, opts.db);

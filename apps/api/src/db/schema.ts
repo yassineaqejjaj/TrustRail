@@ -344,9 +344,15 @@ export const demoRuns = pgTable("demo_runs", {
   orgIdx: index("demo_runs_org_idx").on(t.organizationId),
 }));
 
+/**
+ * RLS-enforced tables (see db/rls.sql). Notably excludes `agent_credentials`,
+ * `sessions`, `users`, and `memberships` -- those are looked up by a
+ * cryptographic digest or user ID before an organization is known, exactly
+ * like a login step. Every route that reads/writes them explicitly filters
+ * by organization_id anyway; see src/auth/context.ts.
+ */
 export const TENANT_SCOPED_TABLES = [
   "agents",
-  "agent_credentials",
   "grants",
   "policy_bundles",
   "policy_versions",

@@ -7,7 +7,9 @@ const orgId = idSchema(PREFIXES.organization);
 const agentId = idSchema(PREFIXES.agent);
 const userId = idSchema(PREFIXES.user);
 const grantId = idSchema(PREFIXES.grant);
-const connectorId = idSchema(PREFIXES.connector);
+// Connector IDs are trusted-operator-configured slugs (e.g. "merchant_sandbox"),
+// not generated opaque IDs -- see docs/PRODUCT_SPEC.md section 11's example payload.
+const connectorId = z.string().regex(/^[a-z][a-z0-9_]{1,63}$/, "connector_id must be a lowercase slug");
 
 /**
  * Payload accepted by POST /v1/grants. The caller never supplies
