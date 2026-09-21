@@ -4,7 +4,8 @@ import { z } from "zod";
 import type { Db } from "../db/client.js";
 import { withTenant } from "../db/client.js";
 import { actions, receipts, approvals } from "../db/schema.js";
-import { agentRoute, userRoute } from "../http/handlers.js";
+import { agentRoute, userRoute, handleRouteError } from "../http/handlers.js";
+import { authenticateAgent, authenticateUserWithOrg } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
 import { createActionRequestSchema, EXECUTION_STATES, DECISIONS } from "@trustrail/contracts";
 import { submitAction, type SubmitActionDeps } from "../gateway/submitAction.js";
@@ -98,17 +99,25 @@ export function registerActionRoutes(app: FastifyInstance, db: Db, deps: SubmitA
     })
   );
 
-  app.get(
-    "/v1/actions/:id",
-    userRoute(db, async (ctx, req, reply) => {
+  /**
+   * Dual auth: a dashboard user (session + org header) can view any action
+   * in their organization, and an agent (bearer credential) can check the
+   * status of an action it acted on -- needed by the MCP adapter's
+   * `get_action_status` tool, which authenticates as an agent, not a user.
+   */
+  app.get("/v1/actions/:id", async (req, reply) => {
+    try {
+      const organizationId = req.headers.authorization ? (await authenticateAgent(db, req)).organizationId : (await authenticateUserWithOrg(db, req)).organizationId;
       const params = z.object({ id: z.string() }).safeParse(req.params);
       if (!params.success) return sendApiError(reply, req, new ApiError(400, "BAD_REQUEST", "invalid action id"));
-      const rows = await withTenant(db, ctx.organizationId, (tx) => tx.select().from(actions).where(and(eq(actions.id, params.data.id), eq(actions.organizationId, ctx.organizationId))).limit(1));
+      const rows = await withTenant(db, organizationId, (tx) => tx.select().from(actions).where(and(eq(actions.id, params.data.id), eq(actions.organizationId, organizationId))).limit(1));
       const action = rows[0];
       if (!action) return sendApiError(reply, req, new ApiError(404, "NOT_FOUND", "action not found"));
-      return serializeAction(db, ctx.organizationId, action);
-    })
-  );
+      return serializeAction(db, organizationId, action);
+    } catch (err) {
+      return handleRouteError(err, req, reply);
+    }
+  });
 }
 
 function serializeActionSummary(a: typeof actions.$inferSelect) {

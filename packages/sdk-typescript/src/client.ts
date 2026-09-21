@@ -2,6 +2,7 @@ import { HttpClient, type HttpClientOptions } from "./http.js";
 import { ActionsResource } from "./resources/actions.js";
 import { GrantsResource } from "./resources/grants.js";
 import { ReceiptsResource } from "./resources/receipts.js";
+import { ConnectorsResource } from "./resources/connectors.js";
 
 export interface TrustRailOptions {
   baseUrl: string;
@@ -20,6 +21,7 @@ export class TrustRail {
   readonly actions: ActionsResource;
   readonly grants: GrantsResource;
   readonly receipts: ReceiptsResource;
+  readonly connectors: ConnectorsResource;
 
   constructor(options: TrustRailOptions) {
     const httpOptions: HttpClientOptions = { baseUrl: options.baseUrl, apiKey: options.apiKey, timeoutMs: options.timeoutMs, fetchImpl: options.fetchImpl };
@@ -27,5 +29,6 @@ export class TrustRail {
     this.actions = new ActionsResource(http);
     this.grants = new GrantsResource(http);
     this.receipts = new ReceiptsResource(http);
+    this.connectors = new ConnectorsResource(http);
   }
 }
