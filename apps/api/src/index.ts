@@ -13,8 +13,11 @@ const connector = createMerchantSandboxConnector({ baseUrl: config.MERCHANT_SAND
 async function main() {
   const signingKey = await getActiveSigningKey(db);
   const gatewayDeps = { connector, signingKey, issuer: config.RECEIPT_ISSUER };
+  const demoDeps = config.allowDemoEndpoints
+    ? { scenarioDeps: { deps: gatewayDeps, merchantBaseUrl: config.MERCHANT_SANDBOX_URL, gatewaySecret: config.GATEWAY_SHARED_SECRET } }
+    : undefined;
 
-  const app = buildApp({ db, config, connector, gatewayDeps });
+  const app = buildApp({ db, config, connector, gatewayDeps, demoDeps });
 
   runWorkerForever(db, gatewayDeps, 2000);
 

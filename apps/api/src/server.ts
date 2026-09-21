@@ -20,6 +20,7 @@ import { registerReceiptRoutes } from "./routes/receipts.js";
 import { registerSimulationRoutes } from "./routes/simulations.js";
 import { registerMetricsRoutes } from "./routes/metrics.js";
 import { registerEventRoutes } from "./routes/events.js";
+import { registerDemoRoutes, type DemoRouteDeps } from "./routes/demo.js";
 import type { SubmitActionDeps } from "./gateway/submitAction.js";
 import type { ApprovalDecisionDeps } from "./gateway/approvalResume.js";
 import type { Connector } from "./gateway/connector.js";
@@ -29,6 +30,7 @@ export interface BuildAppOptions {
   config: AppConfig;
   connector: Connector;
   gatewayDeps: SubmitActionDeps & ApprovalDecisionDeps;
+  demoDeps?: DemoRouteDeps;
 }
 
 const BODY_LIMIT_BYTES = 256 * 1024;
@@ -88,6 +90,9 @@ export function buildApp(opts: BuildAppOptions): FastifyInstance {
   registerSimulationRoutes(app, opts.db, opts.connector);
   registerMetricsRoutes(app, opts.db);
   registerEventRoutes(app, opts.db);
+  if (opts.demoDeps) {
+    registerDemoRoutes(app, opts.db, opts.config, opts.demoDeps);
+  }
 
   return app;
 }

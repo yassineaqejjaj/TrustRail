@@ -16,6 +16,7 @@ infra/keys/*.key
 infra/keys/*.json
 !infra/keys/.gitkeep
 .trustrail/
+.claude/
 .tsbuildinfo
 playwright-report/
 test-results/
