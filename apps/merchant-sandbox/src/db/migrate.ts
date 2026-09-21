@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,7 +16,7 @@ export async function runMerchantMigrations(connectionString: string): Promise<v
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const url = process.env.MIGRATOR_DATABASE_URL ?? process.env.MERCHANT_DATABASE_URL;
   if (!url) {
     console.error("MIGRATOR_DATABASE_URL (or MERCHANT_DATABASE_URL) is not set");

@@ -13,7 +13,9 @@ pgdata/
 .turbo/
 infra/keys/*.pem
 infra/keys/*.key
+infra/keys/*.json
 !infra/keys/.gitkeep
+.trustrail/
 .tsbuildinfo
 playwright-report/
 test-results/
