@@ -4,24 +4,31 @@ import { z } from "zod";
 import type { Db } from "../db/client.js";
 import { withTenant } from "../db/client.js";
 import { receipts } from "../db/schema.js";
-import { userRoute } from "../http/handlers.js";
+import { handleRouteError } from "../http/handlers.js";
+import { authenticateAgent, authenticateUserWithOrg } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
 import { verifyReceiptRequestSchema } from "@trustrail/contracts";
 import { verifyReceiptJws } from "@trustrail/receipt-verifier";
 import { getTrustedKeys, getPublicJwks } from "../gateway/keys.js";
 
 export function registerReceiptRoutes(app: FastifyInstance, db: Db) {
-  app.get(
-    "/v1/receipts/:id",
-    userRoute(db, async (ctx, req, reply) => {
+  // Dual auth, same reasoning as GET /v1/actions/:id: a dashboard user
+  // (session + org header) or an agent (bearer credential, e.g. the SDK
+  // client used to submit the underlying action) can fetch a receipt
+  // scoped to their own organization.
+  app.get("/v1/receipts/:id", async (req, reply) => {
+    try {
+      const organizationId = req.headers.authorization ? (await authenticateAgent(db, req)).organizationId : (await authenticateUserWithOrg(db, req)).organizationId;
       const params = z.object({ id: z.string() }).safeParse(req.params);
       if (!params.success) return sendApiError(reply, req, new ApiError(400, "BAD_REQUEST", "invalid receipt id"));
-      const rows = await withTenant(db, ctx.organizationId, (tx) => tx.select().from(receipts).where(and(eq(receipts.id, params.data.id), eq(receipts.organizationId, ctx.organizationId))).limit(1));
+      const rows = await withTenant(db, organizationId, (tx) => tx.select().from(receipts).where(and(eq(receipts.id, params.data.id), eq(receipts.organizationId, organizationId))).limit(1));
       const receipt = rows[0];
       if (!receipt) return sendApiError(reply, req, new ApiError(404, "NOT_FOUND", "receipt not found"));
       return { receipt_id: receipt.id, receipt_type: receipt.receiptType, jws: receipt.jws, payload: receipt.payload, created_at: receipt.createdAt };
-    })
-  );
+    } catch (err) {
+      return handleRouteError(err, req, reply);
+    }
+  });
 
   /**
    * Deliberately unauthenticated: independent verification must work for

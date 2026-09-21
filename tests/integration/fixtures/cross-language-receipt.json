@@ -1,0 +1,38 @@
+{
+  "description": "A receipt signed by @trustrail/receipt-verifier (TypeScript). Used by sdk/python's cross-language test to prove both implementations agree byte-for-byte on RFC 8785 canonicalization and Ed25519 verification.",
+  "kid": "02DCqfsLxO0LC71MhBFLWbfOR6LR2UBl1QIRL5Nh5BQ",
+  "public_jwk": {
+    "crv": "Ed25519",
+    "x": "Y3VTtN_Hm8Fl0ELoNneLg16QF_bZCNB4XXruVJnr5zY",
+    "kty": "OKP",
+    "kid": "02DCqfsLxO0LC71MhBFLWbfOR6LR2UBl1QIRL5Nh5BQ",
+    "alg": "EdDSA",
+    "use": "sig"
+  },
+  "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6IjAyRENxZnNMeE8wTEM3MU1oQkZMV2JmT1I2TFIyVUJsMVFJUkw1Tmg1QlEiLCJ0eXAiOiJhcHBsaWNhdGlvbi90cnVzdHJhaWwtcmVjZWlwdCtqd3MifQ.eyJhY3Rpb24iOiJyZWZ1bmQuY3JlYXRlIiwiYWN0aW9uX2lkIjoiYWN0X2Nyb3NzbGFuZ2ZpeHR1cmUwMDAwMSIsImFjdG9yX2lkIjoiYWd0X2Nyb3NzbGFuZ2ZpeHR1cmUwMDAwMSIsImFwcHJvdmFsX2lkIjpudWxsLCJjb25uZWN0b3JfcmVmZXJlbmNlIjoicmVmdW5kX2Nyb3NzbGFuZ2ZpeHR1cmUwMSIsImRlY2lzaW9uIjoiQUxMT1ciLCJkZWxlZ2F0aW9uX2NoYWluX2lkcyI6WyJncmFudF9jcm9zc2xhbmdmaXh0dXJlMDAxIl0sImVudmlyb25tZW50Ijoic2FuZGJveCIsImlzc3VlciI6InRydXN0cmFpbC1maXh0dXJlIiwib3JnYW5pemF0aW9uX2lkIjoib3JnX2Nyb3NzbGFuZ2ZpeHR1cmUwMDAwMSIsIm91dGNvbWUiOiJzdWNjZWVkZWQiLCJwb2xpY3lfaGFzaCI6InNoYTI1NjpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwicG9saWN5X3ZlcnNpb25faWQiOiJwb2x2X2Nyb3NzbGFuZ2ZpeHR1cmUwMDAxIiwicHJpbmNpcGFsX2lkIjoidXNyX2Nyb3NzbGFuZ2ZpeHR1cmUwMDAwMSIsInJlYXNvbl9jb2RlcyI6W10sInJlY2VpcHRfaWQiOiJyY3B0X2Nyb3NzbGFuZ2ZpeHR1cmUwMDAxIiwicmVjZWlwdF90eXBlIjoiZXhlY3V0aW9uIiwicmVjb3JkZWRfYXQiOiIyMDI2LTA5LTIxVDEyOjAwOjAwLjAwMFoiLCJyZXF1ZXN0X2hhc2giOiJzaGEyNTY6YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInJlc291cmNlX2lkIjoib3JkZXJfZGVtb18xMDEiLCJzY2hlbWFfdmVyc2lvbiI6IjEifQ.CLrFg6MetfKejJOhbXMKucasEKQXyFwrfUoHxIlG4VsXiX8UMo8puESlLSm4sytQXOnYRpV01XF35ReMCecLCA",
+  "payload": {
+    "schema_version": "1",
+    "receipt_type": "execution",
+    "receipt_id": "rcpt_crosslangfixture0001",
+    "issuer": "trustrail-fixture",
+    "organization_id": "org_crosslangfixture00001",
+    "environment": "sandbox",
+    "action_id": "act_crosslangfixture00001",
+    "actor_id": "agt_crosslangfixture00001",
+    "principal_id": "usr_crosslangfixture00001",
+    "delegation_chain_ids": [
+      "grant_crosslangfixture001"
+    ],
+    "action": "refund.create",
+    "resource_id": "order_demo_101",
+    "request_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "policy_version_id": "polv_crosslangfixture0001",
+    "policy_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "decision": "ALLOW",
+    "reason_codes": [],
+    "approval_id": null,
+    "outcome": "succeeded",
+    "connector_reference": "refund_crosslangfixture01",
+    "recorded_at": "2026-09-21T12:00:00.000Z"
+  }
+}
