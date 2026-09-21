@@ -1,0 +1,18 @@
+{
+  "name": "@trustrail/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@trustrail/test-support": "workspace:*",
+    "@trustrail/receipt-verifier": "workspace:*",
+    "drizzle-orm": "^0.36.4",
+    "pg": "^8.13.1",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2"
+  }
+}

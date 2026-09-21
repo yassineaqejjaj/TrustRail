@@ -25,8 +25,44 @@ pnpm --filter <package> run test
 | `@trustrail/mcp-adapter` | `pnpm --filter @trustrail/mcp-adapter run test` | **5/5 passed** | A **real MCP client** (`@modelcontextprotocol/sdk`'s `Client`) driving the actual built adapter binary as a subprocess against a real running API + merchant sandbox: tool listing, real order lookup, real EUR 80 refund execution, EUR 700 denial (the model cannot make itself the authority), and `get_action_status` cross-checked against `request_refund`'s own result. |
 | `trustrail` (Python) | `cd sdk/python && source .venv/bin/activate && pytest` | **9/9 passed** | 3 canonicalization tests; 3 cross-language receipt tests verifying a fixture actually signed by the TypeScript signer (`tests/integration/fixtures/cross-language-receipt.json`) — proves byte-for-byte RFC 8785 + Ed25519 agreement between the two implementations, including tamper detection on that same fixture; 3 live-API tests against a real running stack spawned as a subprocess (ALLOW+succeeded, DENY, receipt get+verify). |
 
-**Total: 96/96 tests passed**, none skipped, across 8 packages, none against
+**Total: 96/96 unit/integration tests passed** (plus 4/4 Playwright specs
+covering 5 mandatory flows, see below), none skipped, across 8 packages, none against
 mocked databases or mocked HTTP servers for the integration-level tests.
+
+## Browser tests (`pnpm test:e2e`, real Playwright + real Chromium)
+
+`tests/e2e` covers exactly the five flows spec section 16 names, each
+against a freshly-provisioned real backend (its own ephemeral Postgres, its
+own merchant-sandbox instance, its own `next dev` process on a private
+port) rather than `pnpm dev`'s shared one, so this suite can run
+standalone or in CI without colliding with a developer's running stack:
+
+```
+Running 4 tests using 1 worker
+  ✓ approval.spec.ts: an independent reviewer approves a EUR 350 request through the dashboard (2.8s)
+  ✓ denial.spec.ts: a denied action shows a clear reason in the dashboard (0.9s)
+  ✓ onboarding.spec.ts: register, create an organization, register an agent, reveal a credential, issue a grant, and run a real EUR 80 refund (0.8s)
+  ✓ receipt-verification.spec.ts: the Receipts page verifies a real receipt and catches a tampered one (1.2s)
+  4 passed (16.0s)
+```
+
+Every one of these bugs was a real one found and fixed during this run, not
+a hypothetical:
+- Two ambiguous-selector bugs in the test code itself (the auth form's mode
+  toggle and submit buttons share a label; the Receipts page has an
+  icon-only per-row "Verify" button with the same accessible name as the
+  main submit button) — fixed by scoping locators more precisely.
+- A genuine content bug in the onboarding test's own assertion: "Deny" is
+  not a substring of "Denied" (`/Deny/i` never matches "Denied" — different
+  words), so the first denial-page assertion was silently unreachable
+  until corrected to match the actual rendered text.
+- Confirmed the onboarding page's fail-closed design is real, not
+  accidental: a brand-new organization created live through the browser
+  has no merchant orders, and running the first-action step against it
+  correctly returns `STATE_UNAVAILABLE` until orders are seeded -- the
+  onboarding test seeds them explicitly via a direct DB call (mirroring
+  what `pnpm demo:seed` does) rather than working around the fail-closed
+  behavior.
 
 ## Deterministic demo scenarios (`pnpm demo:run`)
 
@@ -136,9 +172,8 @@ substituted.
 
 ## Known gaps in coverage (see docs/BUILD_STATUS.md for the full list)
 
-- No Playwright browser-test suite yet for `apps/web`'s flows.
-- `pnpm verify` (a single aggregate command running lint+typecheck+test+build
-  across every package) is not yet wired as one script — each package's
-  checks were run individually, as shown above.
 - `docker compose up --build` has not been executed (no Docker on this
-  build machine).
+  build machine) -- see the Dockerfiles/compose section of
+  `docs/BUILD_STATUS.md`.
+- Playwright covers exactly the five flows spec section 16 names, not
+  every page or every responsive breakpoint (see `docs/ROADMAP.md`).

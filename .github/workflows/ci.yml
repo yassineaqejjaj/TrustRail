@@ -44,3 +44,9 @@ jobs:
           source .venv/bin/activate
           pip install -e ".[dev]"
           pytest
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @trustrail/e2e exec playwright install --with-deps chromium
+
+      - name: End-to-end tests (onboarding, first refund, denial, approval, receipt verification)
+        run: pnpm test:e2e

@@ -52,9 +52,12 @@ Roughly ordered by leverage, not urgency:
    (`infra/docker-compose.yml`) but not exercised on this build machine
    (no Docker available here) — first real deployment attempt should treat
    it as a draft to debug, not a finished artifact.
-9. **Playwright browser test suite** for the dashboard flows listed in spec
-   section 16 (`tests/e2e`) — the frontend itself was built in this session;
-   Playwright coverage of it is the next increment.
+9. **Broader Playwright coverage.** `tests/e2e` covers exactly the five
+   flows spec section 16 names (onboarding, first refund, denial,
+   approval, receipt verification); it does not yet cover every page
+   (Delegations, Policies, Demo Lab's other 11 scenarios, Settings) or
+   responsive/mobile layouts. Extend it as the dashboard gains more
+   business-critical flows worth regression-testing.
 
 ## What would change the roadmap
 
