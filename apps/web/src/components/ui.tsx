@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Check, Copy, Inbox, Loader2 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { forwardRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import type { Decision, ExecutionState, ApprovalStatus } from "@trustrail/contracts";
 import { APPROVAL_LABEL, DECISION_COLOR, DECISION_LABEL, EXECUTION_LABEL, executionColor } from "@/lib/format";
@@ -141,13 +141,21 @@ export function LoadingBlock({ label = "Loading…" }: { label?: string }) {
   );
 }
 
-export function Button({
-  children,
-  variant = "primary",
-  size = "md",
-  className,
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "danger" | "ghost"; size?: "sm" | "md" }) {
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "primary" | "secondary" | "danger" | "ghost";
+  size?: "sm" | "md";
+};
+
+// Radix's `asChild` (used by ConfirmDialog's Dialog.Trigger, among others)
+// clones this element and attaches its own ref to it for focus management.
+// Without forwardRef, React silently drops that ref (a dev-mode console
+// warning: "Function components cannot be given refs"), which intermittently
+// broke click handling on ConfirmDialog triggers/confirm buttons -- found
+// live while rehearsing the demo script, not a hypothetical.
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { children, variant = "primary", size = "md", className, ...props },
+  ref
+) {
   const base = "inline-flex items-center justify-center gap-1.5 rounded-[10px] font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none";
   const sizes = { sm: "px-3 py-2 text-xs", md: "px-[15px] py-[11px] text-sm" };
   const variants = {
@@ -157,11 +165,11 @@ export function Button({
     ghost: "text-muted hover:bg-bg hover:text-ink",
   };
   return (
-    <button className={clsx(base, sizes[size], variants[variant], className)} {...props}>
+    <button ref={ref} className={clsx(base, sizes[size], variants[variant], className)} {...props}>
       {children}
     </button>
   );
-}
+});
 
 export function Field({
   label,
