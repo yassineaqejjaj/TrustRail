@@ -52,6 +52,7 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 - **One minor frontend/backend seam found during integration, not fixed**: no `GET /v1/receipts` list endpoint (Receipts page works around this by deriving its list from recent actions' embedded receipt refs). `agents.last_activity_at` was the other one found; it's fixed now (`apps/api/src/auth/context.ts#authenticateAgent`, test-covered).
 - **Non-money actions share the money budget mechanism, not a parallel one**: `root_daily_limit_minor` holds minor currency units for `refund.create`/`subscription.grant_credit` but a plain daily *count* for the other three subscription actions (`isMoneyAction()` in `packages/contracts/src/enums.ts` gates which). Reuses `packages/gateway-core/src/budget.ts`'s existing reservation ledger (already integer-based) instead of a second quota system — deliberate, but means a grant's `maxAmountMinor`/`currency` fields stay required-but-nominal for grants scoped to non-money actions only (e.g. the demo's "IT Onboarding Agent" grant). Grants schema itself is not polymorphic; a grant mixing money and non-money actions would have ambiguous budget semantics. Mitigated by convention (demo/seed data keeps subscription grants separate from refund grants), not schema-level enforcement.
 - **`subscription.change_plan`/`activate_feature`/`invite_user` are second use case, not yet e2e-tested**: covered by real integration tests (`apps/api/test/subscriptionActions.test.ts`) and by real `pnpm demo:run` executions against a live local stack, but not yet by Playwright (`docs/ROADMAP.md` item 9).
+- **`apps/saas-sandbox`'s production fixture accounts have no dedicated seed entrypoint**: `apps/merchant-sandbox` has the same gap, pre-existing (there's no production-safe route/script to (re)seed a sandbox's own synthetic data on Railway; it was done for `saas-sandbox` this session via a one-off script run inside the `api` container over Railway's private network, and presumably the same way for `merchant-sandbox` in session 5). A real follow-up: a guarded admin endpoint or a documented one-shot script, rather than an ad hoc SSH session each time.
 
 ## Continuation checklist (if a future session resumes this build)
 
@@ -108,8 +109,24 @@ Legend: `done` = implemented and covered by a passing test that was actually run
   10 subscription integration tests, 13 policy-engine unit tests, plus the
   saas-sandbox app's own 16), 11/11 e2e tests still passing (no e2e
   coverage added yet for the 4 new scenarios -- a disclosed gap, see
-  `docs/ROADMAP.md` item 9). Not yet deployed to Railway/Vercel as of this
-  entry.
+  `docs/ROADMAP.md` item 9). Deployed for real afterward: created the
+  `saas-sandbox` Railway service (`.railway/railway.ts`, an
+  Infrastructure-as-Code file added this session -- no secrets committed,
+  every value is `preserve()`'d from Railway's own store), redeployed `api`
+  (self-migrated the new `trustrail_saas` database on boot, confirmed in
+  its own deploy logs) and `web` (Vercel), then seeded the live
+  `saas-sandbox` database's fixture accounts via a one-off script run
+  inside the `api` container over Railway's private network (the fixture
+  seed step has no dedicated production entrypoint yet -- a real gap, see
+  `docs/ROADMAP.md`). Verified live: all 4 new Demo Lab scenarios plus the
+  pre-existing `eur80_auto_refund` scenario (no regression) run
+  successfully against `https://api-production-a3ae.up.railway.app`, and
+  the updated product/landing pages are live at
+  `https://trustrail-mu.vercel.app/product`. One real deployment bug found
+  and fixed along the way: `railway redeploy` (even with `--from-source`)
+  reused a stale prior build rather than pulling the latest commit --
+  `railway up` (which uploads and builds the current local tree directly)
+  was needed to get the new code actually deployed.
 - 2026-09-21 (session 5): Deployed the backend for real (Railway: Postgres
   + api + merchant-sandbox, self-migrating on boot) and the frontend
   (Vercel), then worked through `docs/ROADMAP.md`'s concrete engineering
