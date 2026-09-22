@@ -24,6 +24,10 @@ const SCENARIOS = [
   { id: "connector_timeout_reconciled", title: "Merchant succeeds but the connection times out", body: "Expected: action state 'unknown', reconciled later to 'succeeded' with no duplicate refund and budget held throughout." },
   { id: "direct_merchant_write_rejected", title: "Agent attempts a direct merchant write", body: "Expected: network/auth rejection — the gateway holds the only downstream credential." },
   { id: "order_not_owned_denied", title: "Refund on someone else's order", body: "Order belongs to a different customer. Expected: DENY with RESOURCE_MISMATCH — ownership is checked even though the amount and policy would otherwise allow it." },
+  { id: "lea_onboarding_completed", title: "“Prepare Léa's arrival” onboarding mandate", body: "IT Onboarding Agent grants EUR 100 of license credit and invites Léa as a non-admin member. Expected: both ALLOW, executed immediately — the product brief's own example, enforced end to end." },
+  { id: "lea_admin_invite_blocked", title: "Invite attempt with role “admin”", body: "Directly violates the mandate's “no admin rights” limit. Expected: DENY with ROLE_NOT_ALLOWED — a hard block, not an approval." },
+  { id: "subscription_plan_downgrade_approval", title: "Downgrade from “scale” to “starter”", body: "An eligible plan, but downgrades require human review. Expected: REQUIRE_APPROVAL, then ALLOW once an independent reviewer approves." },
+  { id: "subscription_feature_activation_denied", title: "Activate a feature outside the allow-list", body: "“beta_dashboard” is not on allowed_feature_keys. Expected: DENY with FEATURE_NOT_ALLOWED — a pure allow/deny gate, no approval tier." },
 ];
 
 export default function DemoLabPage() {

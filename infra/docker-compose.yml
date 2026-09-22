@@ -83,6 +83,7 @@ services:
       HOST: "0.0.0.0"
       APP_DATABASE_URL: postgres://trustrail_app:${TRUSTRAIL_APP_PASSWORD}@postgres:5432/trustrail
       MERCHANT_SANDBOX_URL: http://merchant-sandbox:4100
+      SAAS_SANDBOX_URL: http://saas-sandbox:4200
       GATEWAY_SHARED_SECRET: ${GATEWAY_SHARED_SECRET:?}
       RECEIPT_ISSUER: trustrail
       SIGNING_KEYS_DIR: /keys
@@ -114,6 +115,22 @@ services:
       GATEWAY_SHARED_SECRET: ${GATEWAY_SHARED_SECRET:?}
     networks: [trustrail-internal]
     # Deliberately no `ports:` -- see the file header comment.
+
+  saas-sandbox:
+    build:
+      context: ..
+      dockerfile: apps/saas-sandbox/Dockerfile
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: "4200"
+      HOST: "0.0.0.0"
+      SAAS_DATABASE_URL: postgres://trustrail_migrator:${TRUSTRAIL_MIGRATOR_PASSWORD}@postgres:5432/trustrail_saas
+      GATEWAY_SHARED_SECRET: ${GATEWAY_SHARED_SECRET:?}
+    networks: [trustrail-internal]
+    # Deliberately no `ports:` -- same isolation as merchant-sandbox above.
 
   web:
     build:

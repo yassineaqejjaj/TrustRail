@@ -21,7 +21,7 @@ test("shows the seeded default policy and can save + publish a new version", asy
 
   await page.goto(`${state.webBaseUrl}/policies`);
 
-  await expect(page.getByText("Refund policy · sandbox")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/policy · sandbox/)).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText("published", { exact: true }).first()).toBeVisible();
 
   // The Policies page's <Field> labels aren't associated with their inputs

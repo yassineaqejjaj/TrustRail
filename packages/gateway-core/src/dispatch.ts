@@ -3,14 +3,14 @@ import type { Db } from "@trustrail/db";
 import { actions, executionJobs } from "@trustrail/db";
 import { withTenant } from "@trustrail/db";
 import { commitReservations, releaseReservations } from "./budget.js";
-import type { Connector } from "./connector.js";
+import { resolveConnector, type ConnectorRegistry } from "./connector.js";
 import type { ActiveSigningKey } from "./signing.js";
 import { issueReceipt } from "./receiptBuilder.js";
 import { assertTransition } from "@trustrail/policy-engine";
-import type { ExecutionState } from "@trustrail/contracts";
+import type { ActionName, ExecutionState } from "@trustrail/contracts";
 
 export interface DispatchDeps {
-  connector: Connector;
+  connectors: ConnectorRegistry;
   signingKey: ActiveSigningKey;
   issuer: string;
 }
@@ -29,7 +29,7 @@ export const MAX_AUTO_RETRY_ATTEMPTS = 8;
  * the one place the connector's write endpoint is called, and it is called
  * with the TrustRail action ID as the connector idempotency key (spec
  * section 7), so a retry after a crash or a worker restart can never
- * double-refund.
+ * double-execute.
  *
  * Called synchronously once right after the reservation transaction
  * commits (for low demo latency) and again later by the worker for any
@@ -55,11 +55,14 @@ export async function dispatchAction(db: Db, deps: DispatchDeps, organizationId:
       return action.executionState as ExecutionState;
     }
 
-    const outcome = await deps.connector.createRefund({
+    const connector = resolveConnector(deps.connectors, action.connectorId);
+    if (!connector) throw new Error(`no connector registered for connector_id "${action.connectorId}"`);
+
+    const outcome = await connector.executeAction({
       organizationId,
       resourceId: action.resourceId,
-      amountMinor: (action.arguments as { amount_minor: number }).amount_minor,
-      currency: (action.arguments as { currency: "EUR" }).currency,
+      action: action.action as ActionName,
+      arguments: action.arguments as Record<string, unknown>,
       idempotencyKey: action.id,
     });
 
@@ -104,7 +107,7 @@ export async function dispatchAction(db: Db, deps: DispatchDeps, organizationId:
         attemptCount,
         lastError:
           finalState === "failed"
-            ? "connector rejected the refund"
+            ? "connector rejected the action"
             : finalState === "unknown"
               ? stillRetrying
                 ? "connector request timed out"
@@ -123,7 +126,7 @@ export async function dispatchAction(db: Db, deps: DispatchDeps, organizationId:
       actorId: action.actorAgentId,
       principalId: action.principalId,
       delegationChainIds: [action.rootGrantId, action.grantId].filter((v, i, arr) => arr.indexOf(v) === i),
-      action: action.action as "refund.create",
+      action: action.action as ActionName,
       resourceId: action.resourceId,
       requestHash: action.requestHash,
       policyVersionId: action.policyVersionId ?? "",

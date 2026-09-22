@@ -50,6 +50,8 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 - **Worker has no elevated DB role**: it iterates the global `organizations` table and opens one tenant-scoped transaction per org per poll tick. Fine at demo scale; an O(orgs) scaling limit.
 - **(Resolved 2026-09-21)** `.github/workflows/ci.yml` has now been run for real on `yassineaqejjaj/trustrail` and passes. It was not a formality the first time either — it failed once on a `pnpm/action-setup@v4` version-conflict check, fixed in the same session (`docs/DECISIONS.md`).
 - **One minor frontend/backend seam found during integration, not fixed**: no `GET /v1/receipts` list endpoint (Receipts page works around this by deriving its list from recent actions' embedded receipt refs). `agents.last_activity_at` was the other one found; it's fixed now (`apps/api/src/auth/context.ts#authenticateAgent`, test-covered).
+- **Non-money actions share the money budget mechanism, not a parallel one**: `root_daily_limit_minor` holds minor currency units for `refund.create`/`subscription.grant_credit` but a plain daily *count* for the other three subscription actions (`isMoneyAction()` in `packages/contracts/src/enums.ts` gates which). Reuses `packages/gateway-core/src/budget.ts`'s existing reservation ledger (already integer-based) instead of a second quota system — deliberate, but means a grant's `maxAmountMinor`/`currency` fields stay required-but-nominal for grants scoped to non-money actions only (e.g. the demo's "IT Onboarding Agent" grant). Grants schema itself is not polymorphic; a grant mixing money and non-money actions would have ambiguous budget semantics. Mitigated by convention (demo/seed data keeps subscription grants separate from refund grants), not schema-level enforcement.
+- **`subscription.change_plan`/`activate_feature`/`invite_user` are second use case, not yet e2e-tested**: covered by real integration tests (`apps/api/test/subscriptionActions.test.ts`) and by real `pnpm demo:run` executions against a live local stack, but not yet by Playwright (`docs/ROADMAP.md` item 9).
 
 ## Continuation checklist (if a future session resumes this build)
 
@@ -61,6 +63,53 @@ Legend: `done` = implemented and covered by a passing test that was actually run
 
 ## Session log
 
+- 2026-09-21 (session 6): Built a second use case beyond refunds, with a
+  real backend, per a product-vision discussion about generalizing
+  TrustRail beyond payments to any significant delegated agent action.
+  Chose SaaS B2B account/subscription management (the discussion's own
+  recommendation): a new `apps/saas-sandbox` service (fixture SaaS
+  accounts/plans/features/users, an internal write API mirroring
+  `apps/merchant-sandbox`'s shape) and a matching
+  `apps/api/src/gateway/saasSandboxConnector.ts`, registered alongside
+  `merchant_sandbox` in a new `ConnectorRegistry` (`packages/gateway-core`)
+  that replaced the previous single-hardcoded-connector design end to end
+  (`Connector`, `ResourceFacts`, `EvaluationRequest`, `dispatchAction`,
+  every route and test harness that touched a connector). Added four
+  action types (`subscription.grant_credit`, `subscription.change_plan`,
+  `subscription.activate_feature`, `subscription.invite_user`), each with
+  its own zod policy-bundle schema and its own branch in
+  `packages/policy-engine/src/evaluate.ts` -- deliberately not uniform:
+  `grant_credit` reuses the automatic/approval amount tiering (the one
+  action with real money), `change_plan` hard-denies an ineligible plan
+  but escalates a downgrade to approval, `activate_feature` is a pure
+  allow/deny gate with no approval tier at all, and `invite_user` hard-blocks
+  an admin-role invite while treating any other disallowed role as an
+  "exception" sent to a human -- matching the discussion's own worked
+  example ("prepare Lea's arrival: create her access for 30 days, no admin
+  rights, and purchase at most EUR 150 of licenses; request validation for
+  any exception") field for field. Seeded that exact example into the demo
+  org (a new "IT Onboarding Agent" grant covering all four actions) and
+  added four Demo Lab scenarios recreating it, run for real against a live
+  local stack (`lea_onboarding_completed`, `lea_admin_invite_blocked`,
+  `subscription_plan_downgrade_approval`, `subscription_feature_activation_denied`
+  -- all four verified passing via `pnpm demo:run`, not just unit-tested).
+  Extended the Policies and Demo Lab pages (`apps/web`) to handle five
+  action types instead of one hardcoded shape, including a real bug found
+  and fixed along the way: the simulate panel always submitted
+  `refund.create` regardless of which policy bundle was selected. Extended
+  the Docker/Railway deployment path (a third database `trustrail_saas`,
+  a third sandbox service, `apps/api`'s self-migration boot sequence) and
+  `pnpm setup:local`/`pnpm demo:seed`/`pnpm demo:run` for local dev --
+  found and fixed a real bug in that work too: `SAAS_DATABASE_URL`'s
+  default embedded a freshly-generated, throwaway migrator password
+  instead of the one already persisted in an existing `.env`, which broke
+  migrations on any re-run of `pnpm setup:local` against a pre-existing
+  local install. 136 unit/integration tests passing (up from 97; 45 new:
+  10 subscription integration tests, 13 policy-engine unit tests, plus the
+  saas-sandbox app's own 16), 11/11 e2e tests still passing (no e2e
+  coverage added yet for the 4 new scenarios -- a disclosed gap, see
+  `docs/ROADMAP.md` item 9). Not yet deployed to Railway/Vercel as of this
+  entry.
 - 2026-09-21 (session 5): Deployed the backend for real (Railway: Postgres
   + api + merchant-sandbox, self-migrating on boot) and the frontend
   (Vercel), then worked through `docs/ROADMAP.md`'s concrete engineering

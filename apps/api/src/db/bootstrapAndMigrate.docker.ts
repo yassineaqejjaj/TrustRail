@@ -1,11 +1,12 @@
 /**
  * Bootstraps the trustrail_migrator/trustrail_app role split against a
  * real external Postgres server (as opposed to scripts/setup-local.ts,
- * which manages its own embedded instance), runs both apps' migrations,
- * and generates a signing key into the `/keys` volume if none usable
- * exists yet. Mirrors scripts/setup-local.ts's logic; kept separate
- * because this one talks to an already-running Postgres server rather
- * than starting its own.
+ * which manages its own embedded instance), runs all three apps'
+ * migrations (trustrail, trustrail_merchant, trustrail_saas), and
+ * generates a signing key into the `/keys` volume if none usable exists
+ * yet. Mirrors scripts/setup-local.ts's logic; kept separate because this
+ * one talks to an already-running Postgres server rather than starting
+ * its own.
  *
  * Used two ways:
  * - Docker Compose's one-shot `migrate` service invokes this file
@@ -46,14 +47,17 @@ export async function runBootstrapAndMigrate(): Promise<void> {
 
   const adminClient = new pg.Client({ host, port, user: "postgres", password: superuserPassword, database: "postgres" });
   await adminClient.connect();
-  const exists = await adminClient.query("select 1 from pg_database where datname = 'trustrail_merchant'");
-  if (exists.rowCount === 0) {
-    await adminClient.query("create database trustrail_merchant owner trustrail_migrator");
+  for (const dbName of ["trustrail_merchant", "trustrail_saas"]) {
+    const exists = await adminClient.query("select 1 from pg_database where datname = $1", [dbName]);
+    if (exists.rowCount === 0) {
+      await adminClient.query(`create database ${dbName} owner trustrail_migrator`);
+    }
   }
   await adminClient.end();
 
   const migratorUrl = `postgres://trustrail_migrator:${migratorPassword}@${host}:${port}/trustrail`;
   const merchantMigratorUrl = `postgres://trustrail_migrator:${migratorPassword}@${host}:${port}/trustrail_merchant`;
+  const saasMigratorUrl = `postgres://trustrail_migrator:${migratorPassword}@${host}:${port}/trustrail_saas`;
 
   console.log("running TrustRail migrations + RLS policies...");
   await runMigrations(migratorUrl);
@@ -67,6 +71,11 @@ export async function runBootstrapAndMigrate(): Promise<void> {
   const merchantMigratePath = new URL("../../../merchant-sandbox/dist/db/migrate.js", import.meta.url).href;
   const merchantMigrateModule = (await import(merchantMigratePath)) as { runMerchantMigrations: (connectionString: string) => Promise<void> };
   await merchantMigrateModule.runMerchantMigrations(merchantMigratorUrl);
+
+  console.log("running saas-sandbox migrations...");
+  const saasMigratePath = new URL("../../../saas-sandbox/dist/db/migrate.js", import.meta.url).href;
+  const saasMigrateModule = (await import(saasMigratePath)) as { runSaasMigrations: (connectionString: string) => Promise<void> };
+  await saasMigrateModule.runSaasMigrations(saasMigratorUrl);
 
   console.log("checking for a signing key...");
   process.env.APP_DATABASE_URL = `postgres://trustrail_app:${appPassword}@${host}:${port}/trustrail`;

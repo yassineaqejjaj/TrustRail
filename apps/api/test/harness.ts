@@ -12,6 +12,8 @@ import * as schema from "@trustrail/db";
 import { buildApp } from "../src/server.js";
 import type { AppConfig } from "../src/config.js";
 import { createMerchantSandboxConnector } from "../src/gateway/merchantSandboxConnector.js";
+import { createSaasSandboxConnector } from "../src/gateway/saasSandboxConnector.js";
+import type { ConnectorRegistry } from "@trustrail/gateway-core";
 import { generateSigningKeyPair } from "@trustrail/receipt-verifier";
 import { newId } from "@trustrail/db";
 import { buildMerchantSandboxApp } from "../../merchant-sandbox/src/server.js";
@@ -19,6 +21,10 @@ import { runMerchantMigrations } from "../../merchant-sandbox/src/db/migrate.js"
 import { drizzle as drizzleMerchant } from "drizzle-orm/node-postgres";
 import * as merchantSchema from "../../merchant-sandbox/src/db/schema.js";
 import { seedMerchantSandbox } from "../../merchant-sandbox/src/seed.js";
+import { buildSaasSandboxApp } from "../../saas-sandbox/src/server.js";
+import { runSaasMigrations } from "../../saas-sandbox/src/db/migrate.js";
+import * as saasSchema from "../../saas-sandbox/src/db/schema.js";
+import { seedSaasSandbox } from "../../saas-sandbox/src/seed.js";
 
 export interface TestHarness {
   pgInstance: EphemeralPostgres;
@@ -27,10 +33,14 @@ export interface TestHarness {
   app: FastifyInstance;
   merchantApp: FastifyInstance;
   merchantBaseUrl: string;
+  saasApp: FastifyInstance;
+  saasBaseUrl: string;
   gatewaySecret: string;
   config: AppConfig;
   signingKey: { kid: string; privateJwk: object };
+  connectors: ConnectorRegistry;
   seedMerchantOrders(organizationId: string): Promise<void>;
+  seedSaasAccounts(organizationId: string): Promise<void>;
   teardown(): Promise<void>;
 }
 
@@ -71,9 +81,20 @@ export async function setupTestHarness(): Promise<TestHarness> {
   const merchantDb = drizzleMerchant(merchantPool, { schema: merchantSchema });
   const merchantApp = buildMerchantSandboxApp({ db: merchantDb, gatewaySecret });
   await merchantApp.listen({ port: 0, host: "127.0.0.1" });
-  const address = merchantApp.server.address();
-  const merchantPort = typeof address === "object" && address ? address.port : 0;
+  const merchantAddress = merchantApp.server.address();
+  const merchantPort = typeof merchantAddress === "object" && merchantAddress ? merchantAddress.port : 0;
   const merchantBaseUrl = `http://127.0.0.1:${merchantPort}`;
+
+  // SaaS sandbox: same pattern, its own database, for subscription.* actions.
+  const saasMigratorUrl = await pgInstance.createDatabase("saas_it");
+  await runSaasMigrations(saasMigratorUrl);
+  const saasPool = new pg.Pool({ connectionString: saasMigratorUrl, max: 5 });
+  const saasDb = drizzle(saasPool, { schema: saasSchema });
+  const saasApp = buildSaasSandboxApp({ db: saasDb, gatewaySecret });
+  await saasApp.listen({ port: 0, host: "127.0.0.1" });
+  const saasAddress = saasApp.server.address();
+  const saasPort = typeof saasAddress === "object" && saasAddress ? saasAddress.port : 0;
+  const saasBaseUrl = `http://127.0.0.1:${saasPort}`;
 
   const config: AppConfig = {
     NODE_ENV: "test",
@@ -83,6 +104,7 @@ export async function setupTestHarness(): Promise<TestHarness> {
     APP_DATABASE_URL: appUrl,
     SESSION_COOKIE_SECURE: false,
     MERCHANT_SANDBOX_URL: merchantBaseUrl,
+    SAAS_SANDBOX_URL: saasBaseUrl,
     GATEWAY_SHARED_SECRET: gatewaySecret,
     RECEIPT_ISSUER: "trustrail-test",
     SIGNING_KEYS_DIR: keyDir,
@@ -91,10 +113,13 @@ export async function setupTestHarness(): Promise<TestHarness> {
     allowDemoEndpoints: true,
   };
 
-  const connector = createMerchantSandboxConnector({ baseUrl: merchantBaseUrl, gatewaySecret, timeoutMs: 2000 });
-  const gatewayDeps = { connector, signingKey: { kid: keys.kid, privateJwk: keys.privateJwk }, issuer: config.RECEIPT_ISSUER };
+  const connectors: ConnectorRegistry = {
+    merchant_sandbox: createMerchantSandboxConnector({ baseUrl: merchantBaseUrl, gatewaySecret, timeoutMs: 2000 }),
+    saas_sandbox: createSaasSandboxConnector({ baseUrl: saasBaseUrl, gatewaySecret, timeoutMs: 2000 }),
+  };
+  const gatewayDeps = { connectors, signingKey: { kid: keys.kid, privateJwk: keys.privateJwk }, issuer: config.RECEIPT_ISSUER };
 
-  const app = buildApp({ db, config, connector, gatewayDeps });
+  const app = buildApp({ db, config, connectors, gatewayDeps });
   await app.ready();
 
   return {
@@ -104,17 +129,25 @@ export async function setupTestHarness(): Promise<TestHarness> {
     app,
     merchantApp,
     merchantBaseUrl,
+    saasApp,
+    saasBaseUrl,
     gatewaySecret,
     config,
     signingKey: { kid: keys.kid, privateJwk: keys.privateJwk },
+    connectors,
     async seedMerchantOrders(organizationId: string) {
       await seedMerchantSandbox(merchantDb, organizationId);
+    },
+    async seedSaasAccounts(organizationId: string) {
+      await seedSaasSandbox(saasDb, organizationId);
     },
     async teardown() {
       await app.close();
       await merchantApp.close();
+      await saasApp.close();
       await appPool.end();
       await merchantPool.end();
+      await saasPool.end();
       await pgInstance.stop();
     },
   };

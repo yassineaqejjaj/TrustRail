@@ -91,12 +91,16 @@ export default async function globalSetup() {
     GATEWAY_SHARED_SECRET: gatewaySecret, RECEIPT_ISSUER: "trustrail-e2e", SIGNING_KEYS_DIR: keyDir,
     CORS_ORIGIN: "http://127.0.0.1:3100", isProduction: false, allowDemoEndpoints: true,
   };
-  const gatewayDeps = { connector, signingKey: { kid: keys.kid, privateJwk: keys.privateJwk }, issuer: config.RECEIPT_ISSUER };
+  const connectors = { merchant_sandbox: connector };
+  const gatewayDeps = { connectors, signingKey: { kid: keys.kid, privateJwk: keys.privateJwk }, issuer: config.RECEIPT_ISSUER };
   // Mirrors apps/api/src/index.ts's own construction exactly -- without
   // this, buildApp() never registers /v1/demo/* at all (it's conditional
   // on demoDeps being passed), which is what a Demo Lab e2e spec needs.
+  // No saas_sandbox connector here: no e2e spec exercises subscription.*
+  // actions yet (apps/api/test/subscriptionActions.test.ts covers those at
+  // the integration level instead) -- add one if/when that changes.
   const demoDeps = { scenarioDeps: { deps: gatewayDeps, merchantBaseUrl, gatewaySecret } };
-  apiApp = buildApp({ db: apiDb, config: config as never, connector, gatewayDeps, demoDeps });
+  apiApp = buildApp({ db: apiDb, config: config as never, connectors, gatewayDeps, demoDeps });
   await apiApp.listen({ port: 0, host: "127.0.0.1" });
   const apiAddr = apiApp.server.address();
   const apiBaseUrl = `http://127.0.0.1:${typeof apiAddr === "object" && apiAddr ? apiAddr.port : 0}`;

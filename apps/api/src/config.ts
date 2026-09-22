@@ -8,6 +8,7 @@ const envSchema = z.object({
   APP_DATABASE_URL: z.string().min(1),
   SESSION_COOKIE_SECURE: z.coerce.boolean().default(false),
   MERCHANT_SANDBOX_URL: z.string().url().default("http://127.0.0.1:4100"),
+  SAAS_SANDBOX_URL: z.string().url().default("http://127.0.0.1:4200"),
   GATEWAY_SHARED_SECRET: z.string().min(16),
   RECEIPT_ISSUER: z.string().default("trustrail-local"),
   SIGNING_KEYS_DIR: z.string().default("./infra/keys"),

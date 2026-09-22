@@ -25,8 +25,10 @@ export interface GrantChainLink {
   status: "active" | "revoked" | "expired";
 }
 
+/** `refund.create`'s resource is the merchant order/payment being refunded. */
 export interface OrderFacts {
-  found: boolean;
+  kind: "order";
+  found: true;
   ownedByPrincipal: boolean;
   ageDays: number;
   disputed: boolean;
@@ -34,16 +36,54 @@ export interface OrderFacts {
   currency: Currency;
 }
 
+/**
+ * Every `subscription.*` action's resource is the same SaaS account --
+ * grant_credit, change_plan, activate_feature, and invite_user all read
+ * and mutate one account record, unlike refunds' one-resource-per-order
+ * model. `currentPlanId`/`activeFeatureKeys`/`userCount`/`adminUserCount`
+ * are read by different actions' policy checks (change_plan reads
+ * `currentPlanId` for downgrade detection, invite_user reads nothing here
+ * today but the shape is here for a future "max total users" policy).
+ */
+export interface SubscriptionAccountFacts {
+  kind: "subscription_account";
+  found: true;
+  suspended: boolean;
+  currentPlanId: string;
+  activeFeatureKeys: string[];
+  userCount: number;
+  adminUserCount: number;
+  currency: Currency;
+}
+
+export type ResourceFacts = OrderFacts | SubscriptionAccountFacts;
+
 export interface EvaluationRequest {
   now: Date;
   action: ActionName;
   resourceId: string;
   connectorId: string;
+  /**
+   * Required for every action for a uniform request shape, but only
+   * meaningful for money actions (isMoneyAction(action) from
+   * @trustrail/contracts) -- the delegation chain's amount cap and the
+   * policy's automatic/approval tiering are skipped entirely for
+   * non-money actions, which are bounded by `arguments`-based allow-list
+   * checks instead. Callers of non-money actions pass 0.
+   */
   amountMinor: number;
   currency: Currency;
+  /**
+   * The full action-specific request arguments (e.g. `target_plan`,
+   * `feature_key`, `role`) -- needed because non-money actions are
+   * evaluated against fields evaluate() otherwise never sees (it only
+   * unpacked `amountMinor`/`currency` from `arguments` before this
+   * generalization). Optional because refund evaluation never reads it.
+   */
+  arguments?: Record<string, unknown>;
   /** Ordered root -> leaf. Last element is the grant the caller presented. */
   chain: GrantChainLink[];
-  order: OrderFacts | { found: false };
+  resource: ResourceFacts | { found: false };
   policy: PolicyBundle | null;
   /**
    * When resuming after a human decision, the caller passes the approval

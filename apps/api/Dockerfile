@@ -27,11 +27,13 @@ COPY packages/test-support/package.json packages/test-support/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/gateway-core/package.json packages/gateway-core/package.json
 COPY apps/api/package.json apps/api/package.json
-# apps/merchant-sandbox's package.json is needed too: the migrate
-# service's entrypoint (src/db/bootstrapAndMigrate.docker.ts) imports its
-# migration runner by relative path to run both apps' migrations from one
+# apps/merchant-sandbox's and apps/saas-sandbox's package.json files are
+# needed too: the migrate service's entrypoint
+# (src/db/bootstrapAndMigrate.docker.ts) imports each sandbox's migration
+# runner by relative path to run all three apps' migrations from one
 # container -- see that file's header comment.
 COPY apps/merchant-sandbox/package.json apps/merchant-sandbox/package.json
+COPY apps/saas-sandbox/package.json apps/saas-sandbox/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
@@ -42,12 +44,14 @@ COPY packages/db packages/db
 COPY packages/gateway-core packages/gateway-core
 COPY apps/api apps/api
 COPY apps/merchant-sandbox apps/merchant-sandbox
+COPY apps/saas-sandbox apps/saas-sandbox
 RUN pnpm --filter @trustrail/contracts run build \
  && pnpm --filter @trustrail/policy-engine run build \
  && pnpm --filter @trustrail/receipt-verifier run build \
  && pnpm --filter @trustrail/db run build \
  && pnpm --filter @trustrail/gateway-core run build \
  && pnpm --filter @trustrail/merchant-sandbox run build \
+ && pnpm --filter @trustrail/saas-sandbox run build \
  && pnpm --filter @trustrail/api run build
 
 FROM base AS runtime

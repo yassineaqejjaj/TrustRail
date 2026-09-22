@@ -88,21 +88,22 @@ describe("reconciliation: actions permanently stuck in `unknown`", () => {
     agentSecret = await createCredential(cookie, organizationId, agentId);
     grantId = await createRootGrant(cookie, organizationId, userId, agentId);
 
-    // A connector whose order lookups are real (so policy evaluation sees a
-    // genuine, ownable order) but whose createRefund call always times out
-    // -- simulating a merchant integration that never recovers, unlike
+    // A connector whose resource lookups are real (so policy evaluation sees
+    // a genuine, ownable order) but whose executeAction call always times
+    // out -- simulating a merchant integration that never recovers, unlike
     // createFaultInjectingConnector's "succeeds on the second try".
     const realConnector = createMerchantSandboxConnector({ baseUrl: h.merchantBaseUrl, gatewaySecret: h.gatewaySecret, timeoutMs: 2000 });
     const alwaysUnknownConnector: Connector = {
       connectorId: realConnector.connectorId,
-      lookupOrder: realConnector.lookupOrder.bind(realConnector),
-      lookupRefundByIdempotencyKey: realConnector.lookupRefundByIdempotencyKey.bind(realConnector),
-      async createRefund() {
+      lookupResource: realConnector.lookupResource.bind(realConnector),
+      lookupActionByIdempotencyKey: realConnector.lookupActionByIdempotencyKey.bind(realConnector),
+      async executeAction() {
         return { status: "unknown", reason: "test: simulated permanent connector outage" };
       },
     };
-    const gatewayDeps = { connector: alwaysUnknownConnector, signingKey: h.signingKey, issuer: h.config.RECEIPT_ISSUER };
-    flakyApp = buildApp({ db: h.db, config: h.config, connector: alwaysUnknownConnector, gatewayDeps });
+    const connectors = { ...h.connectors, merchant_sandbox: alwaysUnknownConnector };
+    const gatewayDeps = { connectors, signingKey: h.signingKey, issuer: h.config.RECEIPT_ISSUER };
+    flakyApp = buildApp({ db: h.db, config: h.config, connectors, gatewayDeps });
     await flakyApp.ready();
 
     const submit = await flakyApp.inject({

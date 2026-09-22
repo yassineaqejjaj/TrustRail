@@ -2,14 +2,23 @@ import { loadConfig } from "./config.js";
 import { getDb } from "@trustrail/db";
 import { buildApp } from "./server.js";
 import { createMerchantSandboxConnector } from "./gateway/merchantSandboxConnector.js";
+import { createSaasSandboxConnector } from "./gateway/saasSandboxConnector.js";
 import { getActiveSigningKey } from "./gateway/keys.js";
-import { runWorkerForever } from "@trustrail/gateway-core";
+import { runWorkerForever, type ConnectorRegistry } from "@trustrail/gateway-core";
 import { runBootstrapAndMigrate } from "./db/bootstrapAndMigrate.docker.js";
 
 const config = loadConfig();
 const db = getDb();
 
-const connector = createMerchantSandboxConnector({ baseUrl: config.MERCHANT_SANDBOX_URL, gatewaySecret: config.GATEWAY_SHARED_SECRET });
+// Two independent downstream systems, one per use case -- refunds go to
+// the merchant sandbox, the four subscription actions go to the SaaS
+// sandbox. Registered by connector_id so the gateway can dispatch either
+// without knowing which is which; see @trustrail/gateway-core's
+// resolveConnector.
+const connectors: ConnectorRegistry = {
+  merchant_sandbox: createMerchantSandboxConnector({ baseUrl: config.MERCHANT_SANDBOX_URL, gatewaySecret: config.GATEWAY_SHARED_SECRET }),
+  saas_sandbox: createSaasSandboxConnector({ baseUrl: config.SAAS_SANDBOX_URL, gatewaySecret: config.GATEWAY_SHARED_SECRET }),
+};
 
 // On a host with no separate migration step that reliably shares this
 // service's own persistent volume (e.g. Railway, where a pre-deploy
@@ -41,12 +50,12 @@ async function main() {
   await selfMigrateIfConfigured();
 
   const signingKey = await getActiveSigningKey(db);
-  const gatewayDeps = { connector, signingKey, issuer: config.RECEIPT_ISSUER };
+  const gatewayDeps = { connectors, signingKey, issuer: config.RECEIPT_ISSUER };
   const demoDeps = config.allowDemoEndpoints
     ? { scenarioDeps: { deps: gatewayDeps, merchantBaseUrl: config.MERCHANT_SANDBOX_URL, gatewaySecret: config.GATEWAY_SHARED_SECRET } }
     : undefined;
 
-  const app = buildApp({ db, config, connector, gatewayDeps, demoDeps });
+  const app = buildApp({ db, config, connectors, gatewayDeps, demoDeps });
 
   runWorkerForever(db, gatewayDeps, 2000);
 

@@ -38,7 +38,13 @@ export const EXECUTION_STATES: readonly ExecutionState[] = [
   "expired",
 ];
 
-export const ACTIONS: readonly ActionName[] = ["refund.create"];
+export const ACTIONS: readonly ActionName[] = [
+  "refund.create",
+  "subscription.grant_credit",
+  "subscription.change_plan",
+  "subscription.activate_feature",
+  "subscription.invite_user",
+];
 
 export const DEFAULT_POLICY_BUNDLE: PolicyBundle = {
   schema_version: "1",
@@ -52,4 +58,51 @@ export const DEFAULT_POLICY_BUNDLE: PolicyBundle = {
   max_order_age_days: 30,
   deny_if_payment_disputed: true,
   approval_ttl_seconds: 900,
+};
+
+export const DEFAULT_GRANT_CREDIT_POLICY_BUNDLE: PolicyBundle = {
+  schema_version: "1",
+  action: "subscription.grant_credit",
+  currency: "EUR",
+  automatic_limit_minor: 15_000,
+  approval_limit_minor: 50_000,
+  root_daily_limit_minor: 100_000,
+  approval_ttl_seconds: 900,
+};
+
+export const DEFAULT_CHANGE_PLAN_POLICY_BUNDLE: PolicyBundle = {
+  schema_version: "1",
+  action: "subscription.change_plan",
+  currency: "EUR",
+  root_daily_limit_minor: 20,
+  approval_ttl_seconds: 900,
+  eligible_target_plans: ["starter", "growth", "scale"],
+  require_approval_for_downgrade: true,
+};
+
+export const DEFAULT_ACTIVATE_FEATURE_POLICY_BUNDLE: PolicyBundle = {
+  schema_version: "1",
+  action: "subscription.activate_feature",
+  currency: "EUR",
+  root_daily_limit_minor: 50,
+  approval_ttl_seconds: 900,
+  allowed_feature_keys: ["sso", "advanced_reporting", "api_access", "custom_roles"],
+};
+
+export const DEFAULT_INVITE_USER_POLICY_BUNDLE: PolicyBundle = {
+  schema_version: "1",
+  action: "subscription.invite_user",
+  currency: "EUR",
+  root_daily_limit_minor: 30,
+  approval_ttl_seconds: 900,
+  allowed_roles: ["member", "billing", "viewer"],
+  disallow_admin_role: true,
+};
+
+export const DEFAULT_POLICY_BUNDLES_BY_ACTION: Record<ActionName, PolicyBundle> = {
+  "refund.create": DEFAULT_POLICY_BUNDLE,
+  "subscription.grant_credit": DEFAULT_GRANT_CREDIT_POLICY_BUNDLE,
+  "subscription.change_plan": DEFAULT_CHANGE_PLAN_POLICY_BUNDLE,
+  "subscription.activate_feature": DEFAULT_ACTIVATE_FEATURE_POLICY_BUNDLE,
+  "subscription.invite_user": DEFAULT_INVITE_USER_POLICY_BUNDLE,
 };

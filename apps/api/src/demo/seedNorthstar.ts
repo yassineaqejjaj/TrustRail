@@ -20,8 +20,16 @@ import {
   DEMO_AGENTS,
   DEMO_ROOT_GRANT_MAX_AMOUNT_MINOR,
   DEMO_ROOT_DAILY_BUDGET_MINOR,
+  DEMO_ONBOARDING_GRANT_MAX_AMOUNT_MINOR,
+  DEMO_ONBOARDING_DAILY_BUDGET_MINOR,
   DEFAULT_POLICY_BUNDLE,
+  DEFAULT_GRANT_CREDIT_POLICY_BUNDLE,
+  DEFAULT_CHANGE_PLAN_POLICY_BUNDLE,
+  DEFAULT_ACTIVATE_FEATURE_POLICY_BUNDLE,
+  DEFAULT_INVITE_USER_POLICY_BUNDLE,
   canonicalHash,
+  type PolicyBundle,
+  type ActionName,
 } from "@trustrail/contracts";
 
 export const DEMO_PASSWORD = "northstar-demo-2026!";
@@ -31,11 +39,28 @@ export interface SeedResult {
   userIds: Record<keyof typeof DEMO_USERS, string>;
   supportAgentId: string;
   refundAgentId: string;
+  itOnboardingAgentId: string;
   supportAgentSecret: string;
   refundAgentSecret: string;
+  itOnboardingAgentSecret: string;
   rootGrantId: string;
   childGrantId: string;
+  onboardingGrantId: string;
 }
+
+const SUBSCRIPTION_ACTIONS: ActionName[] = [
+  "subscription.grant_credit",
+  "subscription.change_plan",
+  "subscription.activate_feature",
+  "subscription.invite_user",
+];
+
+const SUBSCRIPTION_POLICY_BUNDLES: Record<string, PolicyBundle> = {
+  "subscription.grant_credit": DEFAULT_GRANT_CREDIT_POLICY_BUNDLE,
+  "subscription.change_plan": DEFAULT_CHANGE_PLAN_POLICY_BUNDLE,
+  "subscription.activate_feature": DEFAULT_ACTIVATE_FEATURE_POLICY_BUNDLE,
+  "subscription.invite_user": DEFAULT_INVITE_USER_POLICY_BUNDLE,
+};
 
 /**
  * Idempotent: re-running finds the existing organization by name and
@@ -101,6 +126,7 @@ export async function seedNorthstarCommerce(db: Db): Promise<SeedResult> {
 
   const support = await upsertAgent(DEMO_AGENTS.supportAgent.name, DEMO_AGENTS.supportAgent.description, userIds.supportManager);
   const refund = await upsertAgent(DEMO_AGENTS.refundAgent.name, DEMO_AGENTS.refundAgent.description, userIds.supportManager);
+  const onboarding = await upsertAgent(DEMO_AGENTS.itOnboardingAgent.name, DEMO_AGENTS.itOnboardingAgent.description, userIds.supportManager);
 
   const grantResult = await withTenant(db, organizationId, async (tx) => {
     const existingGrants = await tx.select().from(grants).where(eq(grants.organizationId, organizationId));
@@ -167,28 +193,71 @@ export async function seedNorthstarCommerce(db: Db): Promise<SeedResult> {
     } else {
       childGrantId = child.id;
     }
-    return { rootGrantId, childGrantId };
+
+    let onboardingGrant = existingGrants.find((g) => g.subjectAgentId === onboarding.agentId && g.parentGrantId === null);
+    let onboardingGrantId: string;
+    if (!onboardingGrant) {
+      onboardingGrantId = newId("grant");
+      await tx.insert(grants).values({
+        id: onboardingGrantId,
+        organizationId,
+        environment: "sandbox",
+        principalId: userIds.supportManager,
+        issuerType: "user",
+        issuerId: userIds.owner,
+        subjectAgentId: onboarding.agentId,
+        parentGrantId: null,
+        rootGrantId: onboardingGrantId,
+        // Recreates the product brief's "prepare Léa's arrival" mandate
+        // directly: one agent, one grant, all 4 subscription actions --
+        // it does not delegate further, so there is no child grant here
+        // (unlike the refund use case above).
+        allowedActions: SUBSCRIPTION_ACTIONS,
+        allowedResourceIds: [],
+        unrestrictedResources: true,
+        allowedConnectorIds: ["saas_sandbox"],
+        currency: "EUR",
+        maxAmountMinor: DEMO_ONBOARDING_GRANT_MAX_AMOUNT_MINOR,
+        rootBudgetLimitMinor: DEMO_ONBOARDING_DAILY_BUDGET_MINOR,
+        childBudgetLimitMinor: null,
+        validFrom: null,
+        expiresAt: new Date(Date.now() + 365 * 86_400_000),
+        delegationAllowed: false,
+        maxRemainingDepth: 0,
+        status: "active",
+      });
+    } else {
+      onboardingGrantId = onboardingGrant.id;
+    }
+    return { rootGrantId, childGrantId, onboardingGrantId };
   });
 
   await withTenant(db, organizationId, async (tx) => {
-    const existingBundle = await tx.select().from(policyBundles).where(eq(policyBundles.organizationId, organizationId));
-    const bundle = existingBundle.find((b) => b.environment === "sandbox" && b.action === "refund.create");
-    if (!bundle) {
+    const existingBundles = await tx.select().from(policyBundles).where(eq(policyBundles.organizationId, organizationId));
+
+    async function publishIfMissing(action: string, defaultBundle: PolicyBundle): Promise<void> {
+      const bundle = existingBundles.find((b) => b.environment === "sandbox" && b.action === action);
+      if (bundle) return;
       const bundleId = newId("policyBundle");
       const versionId = newId("policyVersion");
-      await tx.insert(policyBundles).values({ id: bundleId, organizationId, environment: "sandbox", action: "refund.create", activeVersionId: versionId, revision: 1 });
+      await tx.insert(policyBundles).values({ id: bundleId, organizationId, environment: "sandbox", action, activeVersionId: versionId, revision: 1 });
       await tx.insert(policyVersions).values({
         id: versionId,
         policyBundleId: bundleId,
         organizationId,
         versionNumber: 1,
-        bundle: DEFAULT_POLICY_BUNDLE,
-        bundleHash: canonicalHash(DEFAULT_POLICY_BUNDLE),
+        bundle: defaultBundle,
+        bundleHash: canonicalHash(defaultBundle),
         status: "published",
         createdByUserId: userIds.owner,
         changeReason: "Northstar Commerce demo seed",
         publishedAt: new Date(),
       });
+    }
+
+    await publishIfMissing("refund.create", DEFAULT_POLICY_BUNDLE);
+    for (const action of SUBSCRIPTION_ACTIONS) {
+      await publishIfMissing(action, SUBSCRIPTION_POLICY_BUNDLES[action]!);
     }
   });
 
@@ -197,9 +266,12 @@ export async function seedNorthstarCommerce(db: Db): Promise<SeedResult> {
     userIds,
     supportAgentId: support.agentId,
     refundAgentId: refund.agentId,
+    itOnboardingAgentId: onboarding.agentId,
     supportAgentSecret: support.secret,
     refundAgentSecret: refund.secret,
+    itOnboardingAgentSecret: onboarding.secret,
     rootGrantId: grantResult.rootGrantId,
     childGrantId: grantResult.childGrantId,
+    onboardingGrantId: grantResult.onboardingGrantId,
   };
 }

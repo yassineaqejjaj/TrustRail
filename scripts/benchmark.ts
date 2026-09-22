@@ -57,8 +57,8 @@ async function main() {
     await seedMerchantSandbox(merchantDb, seed.organizationId);
 
     const signingKey = await getActiveSigningKey(db);
-    const connector = createMerchantSandboxConnector({ baseUrl: merchantBaseUrl, gatewaySecret });
-    const deps = { connector, signingKey, issuer: env.RECEIPT_ISSUER ?? "trustrail-local" };
+    const connectors = { merchant_sandbox: createMerchantSandboxConnector({ baseUrl: merchantBaseUrl, gatewaySecret }) };
+    const deps = { connectors, signingKey, issuer: env.RECEIPT_ISSUER ?? "trustrail-local" };
     const ctx: AgentAuthContext = { kind: "agent", agentId: seed.supportAgentId, organizationId: seed.organizationId, environment: "sandbox", credentialId: "bench" };
 
     const durations: number[] = [];

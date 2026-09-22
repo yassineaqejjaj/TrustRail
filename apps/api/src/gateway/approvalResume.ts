@@ -4,7 +4,7 @@ import { withTenant } from "@trustrail/db";
 import { actions, approvals, executionJobs } from "@trustrail/db";
 import { newId } from "@trustrail/db";
 import { evaluate } from "@trustrail/policy-engine";
-import type { ReasonCode } from "@trustrail/contracts";
+import { isMoneyAction, type ActionName, type ReasonCode } from "@trustrail/contracts";
 import { resolveGrantChain } from "./grantChain.js";
 import { getActivePolicy } from "./policyLookup.js";
 import {
@@ -14,16 +14,14 @@ import {
   BudgetExceededError,
   issueReceipt,
   dispatchAction,
+  resolveConnector,
   type DispatchDeps,
-  type Connector,
 } from "@trustrail/gateway-core";
 import type { UserAuthContext } from "../auth/context.js";
 import { ApiError } from "../http/errors.js";
 import { writeAuditEvent } from "./audit.js";
 
-export interface ApprovalDecisionDeps extends DispatchDeps {
-  connector: Connector;
-}
+export interface ApprovalDecisionDeps extends DispatchDeps {}
 
 /**
  * "Double clicks and parallel reviewers cannot double-dispatch" (spec
@@ -91,10 +89,13 @@ export async function decideApproval(
     return finalizeAsDenied(db, deps, ctx.organizationId, approval.actionId, ["APPROVAL_EXPIRED"]);
   }
 
-  const order = await deps.connector.lookupOrder({ organizationId: ctx.organizationId, resourceId: actionRow.resourceId });
+  const connector = resolveConnector(deps.connectors, actionRow.connectorId);
+  const resource = connector ? await connector.lookupResource({ organizationId: ctx.organizationId, resourceId: actionRow.resourceId }) : { found: false as const };
   const now = new Date();
   const windowDate = utcDateString(now);
   let denyReason: ReasonCode | null = null;
+  const money = isMoneyAction(actionRow.action as ActionName);
+  const args = actionRow.arguments as { amount_minor?: number; currency?: "EUR" };
 
   try {
     await withTenant(db, ctx.organizationId, async (tx) => {
@@ -105,13 +106,14 @@ export async function decideApproval(
       }
       const recheck = evaluate({
         now,
-        action: actionRow.action as "refund.create",
+        action: actionRow.action as ActionName,
         resourceId: actionRow.resourceId,
         connectorId: actionRow.connectorId,
-        amountMinor: (actionRow.arguments as { amount_minor: number }).amount_minor,
-        currency: (actionRow.arguments as { currency: "EUR" }).currency,
+        amountMinor: money ? (args.amount_minor ?? 0) : 0,
+        currency: money ? (args.currency ?? "EUR") : "EUR",
+        arguments: actionRow.arguments as Record<string, unknown>,
         chain,
-        order,
+        resource,
         policy: activePolicy.bundle,
         approval: { status: "approved" },
       });
@@ -121,7 +123,7 @@ export async function decideApproval(
       }
 
       const targets = getBudgetTargets(chain, activePolicy.bundle, actionRow.environment);
-      await reserveBudgets(tx, ctx.organizationId, windowDate, targets, (actionRow.arguments as { amount_minor: number }).amount_minor, actionRow.id);
+      await reserveBudgets(tx, ctx.organizationId, windowDate, targets, money ? (args.amount_minor ?? 0) : 1, actionRow.id);
 
       await tx
         .update(actions)
@@ -143,7 +145,7 @@ export async function decideApproval(
         actorId: actionRow.actorAgentId,
         principalId: actionRow.principalId,
         delegationChainIds: chain.map((g) => g.id),
-        action: actionRow.action as "refund.create",
+        action: actionRow.action as ActionName,
         resourceId: actionRow.resourceId,
         requestHash: actionRow.requestHash,
         policyVersionId: activePolicy.policyVersionId,
@@ -192,7 +194,7 @@ async function finalizeAsDenied(db: Db, deps: ApprovalDecisionDeps, organization
       actorId: actionRow.actorAgentId,
       principalId: actionRow.principalId,
       delegationChainIds: [actionRow.rootGrantId, actionRow.grantId].filter((v, i, arr) => arr.indexOf(v) === i),
-      action: actionRow.action as "refund.create",
+      action: actionRow.action as ActionName,
       resourceId: actionRow.resourceId,
       requestHash: actionRow.requestHash,
       policyVersionId: actionRow.policyVersionId ?? "",

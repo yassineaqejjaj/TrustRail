@@ -77,15 +77,46 @@ Roughly ordered by leverage, not urgency:
    be open.
 9. **Broader Playwright coverage.** `tests/e2e` covers exactly the five
    flows spec section 16 names (onboarding, first refund, denial,
-   approval, receipt verification); it does not yet cover every page
-   (Delegations, Policies, Demo Lab's other 11 scenarios, Settings) or
-   responsive/mobile layouts. Extend it as the dashboard gains more
-   business-critical flows worth regression-testing.
+   approval, receipt verification), plus 8 of Demo Lab's now-17 named
+   scenarios (`tests/e2e/specs/demo-lab.spec.ts`); it does not yet cover
+   every page (Delegations, Policies) or responsive/mobile layouts, and the
+   4 new subscription scenarios below aren't in that 8 yet. Extend it as
+   the dashboard gains more business-critical flows worth
+   regression-testing.
+10. **(Done 2026-09-21)** A second use case beyond refunds, with a real
+    backend rather than a copy/positioning change: SaaS B2B account and
+    subscription management (`apps/saas-sandbox`, a new connector
+    registered alongside `merchant_sandbox`). Four new action types --
+    `subscription.grant_credit`, `subscription.change_plan`,
+    `subscription.activate_feature`, `subscription.invite_user` -- each
+    with its own policy bundle shape (`packages/contracts/src/policy.ts`)
+    and its own enforcement branch (`packages/policy-engine/src/evaluate.ts`).
+    This was the exact "pressure test" this section used to call out: it
+    forced `Connector`/`ResourceFacts`/`EvaluationRequest` to become
+    genuinely polymorphic (a `ConnectorRegistry` keyed by `connector_id`,
+    a discriminated `ResourceFacts` union, an `isMoneyAction()` split so
+    non-money actions reuse the same daily-budget mechanism as a plain
+    count instead of minor currency units) rather than quietly assuming
+    "refund.create" everywhere. The product brief's own worked example --
+    "prepare Lea's arrival: create her access for 30 days, no admin
+    rights, and purchase at most EUR 150 of licenses; request validation
+    for any exception" -- is seeded directly into the demo org (an "IT
+    Onboarding Agent" grant covering all four actions) and demonstrated end
+    to end by the `lea_onboarding_completed` and `lea_admin_invite_blocked`
+    Demo Lab scenarios. Covered by `apps/api/test/subscriptionActions.test.ts`
+    (10 integration tests against a real embedded Postgres, mirroring
+    `gateway.integration.test.ts`'s rigor) and 13 new
+    `packages/policy-engine/test/evaluate.test.ts` unit tests. Not yet
+    covered by Playwright (item 9 above already lists that gap generally).
 
 ## What would change the roadmap
 
 Any of: a real customer conversation that says "we need X before we'll
 pilot this," a security review that finds a gap not already listed in
-`docs/THREAT_MODEL.md`, or a decision to target a second action type beyond
-refunds (which would pressure-test how connector-agnostic the current
-design really is, versus how much of it quietly assumes "refund.create").
+`docs/THREAT_MODEL.md`, or a decision to target a third action-type family
+beyond refunds and SaaS subscriptions (per the product brief's own table:
+purchases/spending, CRM modifications, messaging, IT infrastructure writes,
+or data deletion/export) -- each would need its own connector and its own
+disclosed judgment-call boundary, the same way `subscription.change_plan`'s
+plan eligibility is a hard allow-list rather than TrustRail claiming to
+know whether a given plan change is a good idea.

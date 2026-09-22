@@ -4,7 +4,7 @@ import { withTenant } from "@trustrail/db";
 import { actions, approvals, executionJobs } from "@trustrail/db";
 import { newId } from "@trustrail/db";
 import { evaluate, type EvaluationResult } from "@trustrail/policy-engine";
-import { canonicalActionPayload, canonicalHash, type CreateActionRequest, type ReasonCode } from "@trustrail/contracts";
+import { canonicalActionPayload, canonicalHash, isMoneyAction, type CreateActionRequest, type ReasonCode } from "@trustrail/contracts";
 import { resolveGrantChain } from "./grantChain.js";
 import { getActivePolicy } from "./policyLookup.js";
 import {
@@ -14,6 +14,7 @@ import {
   BudgetExceededError,
   issueReceipt,
   dispatchAction,
+  resolveConnector,
   type DispatchDeps,
 } from "@trustrail/gateway-core";
 import { checkIdempotency, recordIdempotencyKey, getAction } from "./idempotency.js";
@@ -23,6 +24,26 @@ import { writeAuditEvent } from "./audit.js";
 import { usageEvents } from "@trustrail/db";
 
 export interface SubmitActionDeps extends DispatchDeps {}
+
+/**
+ * `body.arguments` is a discriminated shape -- only money actions
+ * (refund.create, subscription.grant_credit) carry `amount_minor`/
+ * `currency` at all. Every other action has no real amount, so it's
+ * evaluated/reserved as 0/1 respectively (see isMoneyAction in
+ * @trustrail/contracts and evaluate.ts's own doc comment for why).
+ */
+function extractAmount(body: CreateActionRequest): { amountMinor: number; currency: "EUR" } {
+  if (isMoneyAction(body.action)) {
+    const args = body.arguments as { amount_minor: number; currency: "EUR" };
+    return { amountMinor: args.amount_minor, currency: args.currency };
+  }
+  return { amountMinor: 0, currency: "EUR" };
+}
+
+/** The unit reserved against shared/daily budgets: the real amount for money actions, a flat 1 (one action) for count-quota actions. */
+function reservationAmount(body: CreateActionRequest): number {
+  return isMoneyAction(body.action) ? extractAmount(body).amountMinor : 1;
+}
 
 export interface SubmitActionResult {
   action: typeof actions.$inferSelect;
@@ -97,22 +118,29 @@ async function submitActionInner(
   }
 
   const { chain, policy } = firstPassOutcome;
-  const order = await deps.connector.lookupOrder({ organizationId: ctx.organizationId, resourceId: body.resource_id });
+  const connector = resolveConnector(deps.connectors, body.connector_id);
+  const resource = connector
+    ? await connector.lookupResource({ organizationId: ctx.organizationId, resourceId: body.resource_id })
+    : { found: false as const };
+  const { amountMinor, currency } = extractAmount(body);
 
   const now = new Date();
-  const firstPass: EvaluationResult = chain
-    ? evaluate({
-        now,
-        action: body.action,
-        resourceId: body.resource_id,
-        connectorId: body.connector_id,
-        amountMinor: body.arguments.amount_minor,
-        currency: body.arguments.currency,
-        chain,
-        order,
-        policy: policy?.bundle ?? null,
-      })
-    : { decision: "DENY", reasonCodes: ["GRANT_NOT_FOUND"] as ReasonCode[], explanation: "grant not found or not accessible", matchedChecks: [], evaluatedValues: {} };
+  const firstPass: EvaluationResult = !connector
+    ? { decision: "DENY", reasonCodes: ["CONNECTOR_UNAVAILABLE"] as ReasonCode[], explanation: "connector is not configured", matchedChecks: [], evaluatedValues: {} }
+    : chain
+      ? evaluate({
+          now,
+          action: body.action,
+          resourceId: body.resource_id,
+          connectorId: body.connector_id,
+          amountMinor,
+          currency,
+          arguments: body.arguments,
+          chain,
+          resource,
+          policy: policy?.bundle ?? null,
+        })
+      : { decision: "DENY", reasonCodes: ["GRANT_NOT_FOUND"] as ReasonCode[], explanation: "grant not found or not accessible", matchedChecks: [], evaluatedValues: {} };
 
   const leafGrant = chain?.[chain.length - 1];
   const rootGrantId = chain?.[0]?.id ?? body.grant_id;
@@ -166,10 +194,11 @@ async function submitActionInner(
         action: body.action,
         resourceId: body.resource_id,
         connectorId: body.connector_id,
-        amountMinor: body.arguments.amount_minor,
-        currency: body.arguments.currency,
+        amountMinor,
+        currency,
+        arguments: body.arguments,
         chain: recheckChain,
-        order,
+        resource,
         policy: recheckPolicy.bundle,
       });
       if (recheck.decision !== "ALLOW") {
@@ -178,7 +207,7 @@ async function submitActionInner(
       }
 
       const targets = getBudgetTargets(recheckChain, recheckPolicy.bundle, ctx.environment);
-      await reserveBudgets(tx, ctx.organizationId, windowDate, targets, body.arguments.amount_minor, actionId);
+      await reserveBudgets(tx, ctx.organizationId, windowDate, targets, reservationAmount(body), actionId);
 
       await tx.insert(actions).values({
         id: actionId,
@@ -381,9 +410,9 @@ async function persistAwaitingApproval(
       grantChainIds: extra.chainIds,
       policyVersionId: extra.policyVersionId,
       policyHash: extra.policyHash,
-      amountMinor: body.arguments.amount_minor,
-      currency: body.arguments.currency,
-      triggeringRule: "amount_exceeds_automatic_limit",
+      amountMinor: extractAmount(body).amountMinor,
+      currency: extractAmount(body).currency,
+      triggeringRule: isMoneyAction(body.action) ? "amount_exceeds_automatic_limit" : "not_on_the_automatically_allowed_list",
       status: "pending",
       expiresAt,
     });

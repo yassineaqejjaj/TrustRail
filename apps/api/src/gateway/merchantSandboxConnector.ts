@@ -1,5 +1,6 @@
 import { MISMATCHED_OWNER_CUSTOMER_REF, type Currency } from "@trustrail/contracts";
-import type { Connector, RefundOutcome } from "@trustrail/gateway-core";
+import type { Connector, ActionOutcome } from "@trustrail/gateway-core";
+import type { ResourceFacts } from "@trustrail/policy-engine";
 
 export interface MerchantSandboxConnectorOptions {
   baseUrl: string;
@@ -11,6 +12,9 @@ export interface MerchantSandboxConnectorOptions {
  * HTTP client for the merchant sandbox's internal API. This is the ONLY
  * place the gateway-shared secret is used to reach a downstream system --
  * agents and browsers never see it (docs/PRODUCT_SPEC.md section 3).
+ * Handles exactly one action, `refund.create`; `subscription.*` actions
+ * go through `saasSandboxConnector.ts` instead (see the connector
+ * registry in apps/api/src/index.ts).
  *
  * A request timeout is reported as `{status: "unknown"}` rather than
  * `"failed"`, matching the "merchant succeeds but connection times out"
@@ -60,12 +64,13 @@ export function createMerchantSandboxConnector(opts: MerchantSandboxConnectorOpt
   return {
     connectorId: "merchant_sandbox",
 
-    async lookupOrder({ organizationId, resourceId }) {
+    async lookupResource({ organizationId, resourceId }): Promise<ResourceFacts | { found: false }> {
       const result = await request(`/internal/orders/${encodeURIComponent(resourceId)}?organization_id=${encodeURIComponent(organizationId)}`, { method: "GET" });
       if (!result.ok) {
-        return { found: false, ownedByPrincipal: false, ageDays: 0, disputed: false, remainingAmountMinor: 0, currency: "EUR" };
+        return { found: false };
       }
       return {
+        kind: "order",
         found: true,
         ownedByPrincipal: result.body.customer_ref !== MISMATCHED_OWNER_CUSTOMER_REF,
         ageDays: result.body.age_days,
@@ -75,14 +80,14 @@ export function createMerchantSandboxConnector(opts: MerchantSandboxConnectorOpt
       };
     },
 
-    async createRefund({ organizationId, resourceId, amountMinor, currency, idempotencyKey }): Promise<RefundOutcome> {
+    async executeAction({ organizationId, resourceId, arguments: args, idempotencyKey }): Promise<ActionOutcome> {
       const result = await request("/internal/refunds", {
         method: "POST",
         body: JSON.stringify({
           organization_id: organizationId,
           order_id: resourceId,
-          amount_minor: amountMinor,
-          currency,
+          amount_minor: args.amount_minor,
+          currency: args.currency,
           idempotency_key: idempotencyKey,
         }),
       });
@@ -95,16 +100,16 @@ export function createMerchantSandboxConnector(opts: MerchantSandboxConnectorOpt
         }
         return { status: "failed", reason: `connector returned ${result.status}` };
       }
-      return { status: "succeeded", connectorReference: result.body.refund_id, destination: result.body.destination };
+      return { status: "succeeded", connectorReference: result.body.refund_id, detail: result.body.destination };
     },
 
-    async lookupRefundByIdempotencyKey(idempotencyKey: string): Promise<RefundOutcome | null> {
+    async lookupActionByIdempotencyKey(_action, idempotencyKey: string): Promise<ActionOutcome | null> {
       const result = await request(`/internal/refunds/by-key/${encodeURIComponent(idempotencyKey)}`, { method: "GET" });
       if ("timedOut" in result) {
         return { status: "unknown", reason: "connector request timed out" };
       }
       if (!result.ok) return null;
-      return { status: "succeeded", connectorReference: result.body.refund_id, destination: result.body.destination };
+      return { status: "succeeded", connectorReference: result.body.refund_id, detail: result.body.destination };
     },
   };
 }

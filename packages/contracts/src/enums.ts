@@ -94,11 +94,40 @@ export const REASON_CODES = [
   "POLICY_UNAVAILABLE",
   "CREDENTIAL_REVOKED",
   "INTERNAL_ERROR",
+  "PLAN_NOT_ELIGIBLE",
+  "FEATURE_NOT_ALLOWED",
+  "ROLE_NOT_ALLOWED",
 ] as const;
 export type ReasonCode = (typeof REASON_CODES)[number];
 
 export const CURRENCIES = ["EUR"] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
-export const ACTIONS = ["refund.create"] as const;
+/**
+ * `refund.create` was V1's only action. The four `subscription.*` actions
+ * are the second use case (SaaS B2B account/subscription management),
+ * dispatched to a different connector (`saas_sandbox`) than refunds
+ * (`merchant_sandbox`) -- see packages/policy-engine/src/evaluate.ts for
+ * how evaluation branches per action, and MONEY_ACTIONS below for which
+ * of these carry a real amount.
+ */
+export const ACTIONS = [
+  "refund.create",
+  "subscription.grant_credit",
+  "subscription.change_plan",
+  "subscription.activate_feature",
+  "subscription.invite_user",
+] as const;
 export type ActionName = (typeof ACTIONS)[number];
+
+/**
+ * Actions with a real monetary amount, subject to the automatic/approval
+ * limit tiering and the delegation chain's amount cap. Every other action
+ * (change_plan, activate_feature, invite_user) is bounded by structured
+ * allow-lists/roles and a daily count quota instead -- see
+ * docs/DECISIONS.md for why not every action needs a money-shaped policy.
+ */
+export const MONEY_ACTIONS: ActionName[] = ["refund.create", "subscription.grant_credit"];
+export function isMoneyAction(action: ActionName): boolean {
+  return MONEY_ACTIONS.includes(action);
+}

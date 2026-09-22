@@ -22,6 +22,10 @@ export const SCENARIO_KEYS = [
   "connector_timeout_reconciled",
   "direct_merchant_write_rejected",
   "order_not_owned_denied",
+  "lea_onboarding_completed",
+  "lea_admin_invite_blocked",
+  "subscription_plan_downgrade_approval",
+  "subscription_feature_activation_denied",
 ] as const;
 export type ScenarioKey = (typeof SCENARIO_KEYS)[number];
 
@@ -44,12 +48,32 @@ function supportCtx(seed: SeedResult): AgentAuthContext {
   return { kind: "agent", agentId: seed.supportAgentId, organizationId: seed.organizationId, environment: "sandbox", credentialId: "demo" };
 }
 
+function onboardingCtx(seed: SeedResult): AgentAuthContext {
+  return { kind: "agent", agentId: seed.itOnboardingAgentId, organizationId: seed.organizationId, environment: "sandbox", credentialId: "demo" };
+}
+
 function approverCtx(seed: SeedResult): UserAuthContext {
   return { kind: "user", userId: seed.userIds.approver, email: "approver@northstar.demo", sessionId: "demo", organizationId: seed.organizationId, role: "approver", membershipId: "demo" };
 }
 
 function refundRequest(resourceId: string, amountMinor: number, reason = "Customer return"): CreateActionRequest {
   return { grant_id: "", connector_id: "merchant_sandbox", action: "refund.create", resource_id: resourceId, arguments: { amount_minor: amountMinor, currency: "EUR", reason } };
+}
+
+function grantCreditRequest(resourceId: string, amountMinor: number, reason = "Onboarding license credit"): CreateActionRequest {
+  return { grant_id: "", connector_id: "saas_sandbox", action: "subscription.grant_credit", resource_id: resourceId, arguments: { amount_minor: amountMinor, currency: "EUR", reason } };
+}
+
+function inviteUserRequest(resourceId: string, email: string, role: string, reason = "Prepare Lea's arrival"): CreateActionRequest {
+  return { grant_id: "", connector_id: "saas_sandbox", action: "subscription.invite_user", resource_id: resourceId, arguments: { email, role, reason } };
+}
+
+function changePlanRequest(resourceId: string, targetPlan: string, reason = "Adjust subscription tier"): CreateActionRequest {
+  return { grant_id: "", connector_id: "saas_sandbox", action: "subscription.change_plan", resource_id: resourceId, arguments: { target_plan: targetPlan, reason } };
+}
+
+function activateFeatureRequest(resourceId: string, featureKey: string, reason = "Enable requested feature"): CreateActionRequest {
+  return { grant_id: "", connector_id: "saas_sandbox", action: "subscription.activate_feature", resource_id: resourceId, arguments: { feature_key: featureKey, reason } };
 }
 
 export async function runScenario(key: ScenarioKey, ctx: ScenarioContext): Promise<ScenarioStep[]> {
@@ -87,7 +111,97 @@ export async function runScenario(key: ScenarioKey, ctx: ScenarioContext): Promi
         undefined,
         "Support Agent requests a refund on an order owned by a different customer"
       );
+    case "lea_onboarding_completed":
+      return scenarioLeaOnboardingCompleted(ctx);
+    case "lea_admin_invite_blocked":
+      return scenarioLeaAdminInviteBlocked(ctx);
+    case "subscription_plan_downgrade_approval":
+      return scenarioPlanDowngradeApproval(ctx);
+    case "subscription_feature_activation_denied":
+      return scenarioFeatureActivationDenied(ctx);
   }
+}
+
+/**
+ * Recreates the product brief's own example end to end: "Prepare Lea's
+ * arrival: create her access to team tools for 30 days, no admin rights,
+ * and purchase at most EUR 150 of licenses." The IT Onboarding Agent's
+ * grant/policy pair enforces both halves of that single mandate.
+ */
+async function scenarioLeaOnboardingCompleted(ctx: ScenarioContext): Promise<ScenarioStep[]> {
+  const creditBody = grantCreditRequest("account_demo_lea", 10_000, "12 team-tool licenses for Lea's onboarding");
+  creditBody.grant_id = ctx.seed.onboardingGrantId;
+  const credit = await submitAction(ctx.db, ctx.deps, onboardingCtx(ctx.seed), creditBody, `demo-lea-credit-${Date.now()}`);
+
+  const inviteBody = inviteUserRequest("account_demo_lea", "lea@northstar.demo", "member");
+  inviteBody.grant_id = ctx.seed.onboardingGrantId;
+  const invite = await submitAction(ctx.db, ctx.deps, onboardingCtx(ctx.seed), inviteBody, `demo-lea-invite-${Date.now()}`);
+
+  return [
+    {
+      step: "grant_credit",
+      description: "IT Onboarding Agent grants EUR 100.00 of license credit -- within the EUR 150 automatic limit",
+      ok: credit.action.decision === "ALLOW" && credit.action.executionState === "succeeded",
+      detail: { action_id: credit.action.id },
+    },
+    {
+      step: "invite_user",
+      description: "IT Onboarding Agent invites Lea with role \"member\", not admin -- within the allowed-roles list",
+      ok: invite.action.decision === "ALLOW" && invite.action.executionState === "succeeded",
+      detail: { action_id: invite.action.id },
+    },
+  ];
+}
+
+async function scenarioLeaAdminInviteBlocked(ctx: ScenarioContext): Promise<ScenarioStep[]> {
+  const body = inviteUserRequest("account_demo_lea", "lea@northstar.demo", "admin");
+  body.grant_id = ctx.seed.onboardingGrantId;
+  const result = await submitAction(ctx.db, ctx.deps, onboardingCtx(ctx.seed), body, `demo-lea-admin-${Date.now()}`);
+  return [
+    {
+      step: "invite_admin_attempt",
+      description: "Agent attempts to invite Lea with role \"admin\", directly violating the mandate's \"no admin rights\" limit",
+      ok: result.action.decision === "DENY" && (result.action.reasonCodes as string[]).includes("ROLE_NOT_ALLOWED"),
+      detail: { decision: result.action.decision, reason_codes: result.action.reasonCodes },
+    },
+  ];
+}
+
+async function scenarioPlanDowngradeApproval(ctx: ScenarioContext): Promise<ScenarioStep[]> {
+  const body = changePlanRequest("account_demo_scale", "starter", "Cost reduction for underused seats");
+  body.grant_id = ctx.seed.onboardingGrantId;
+  const submitted = await submitAction(ctx.db, ctx.deps, onboardingCtx(ctx.seed), body, `demo-downgrade-${Date.now()}`);
+  const steps: ScenarioStep[] = [
+    {
+      step: "submit",
+      description: "Agent requests downgrading account_demo_scale from \"scale\" to \"starter\" -- an eligible plan, but a downgrade requiring human review",
+      ok: submitted.action.decision === "REQUIRE_APPROVAL" && submitted.action.executionState === "awaiting_approval",
+      detail: { action_id: submitted.action.id },
+    },
+  ];
+  if (!submitted.action.approvalId) return steps;
+  const decided = await decideApproval(ctx.db, ctx.deps, approverCtx(ctx.seed), submitted.action.approvalId, "approved", "Confirmed with account owner");
+  steps.push({
+    step: "approve",
+    description: "An independent reviewer (Approver) approves the exact pending downgrade",
+    ok: decided.decision === "ALLOW" && decided.executionState === "succeeded",
+    detail: { execution_state: decided.executionState },
+  });
+  return steps;
+}
+
+async function scenarioFeatureActivationDenied(ctx: ScenarioContext): Promise<ScenarioStep[]> {
+  const body = activateFeatureRequest("account_demo_lea", "beta_dashboard", "Try the new dashboard");
+  body.grant_id = ctx.seed.onboardingGrantId;
+  const result = await submitAction(ctx.db, ctx.deps, onboardingCtx(ctx.seed), body, `demo-feature-denied-${Date.now()}`);
+  return [
+    {
+      step: "activate_attempt",
+      description: "Agent requests activating \"beta_dashboard\", which is not on the allowed-feature-keys list -- a pure allow/deny gate, no approval tier",
+      ok: result.action.decision === "DENY" && (result.action.reasonCodes as string[]).includes("FEATURE_NOT_ALLOWED"),
+      detail: { decision: result.action.decision, reason_codes: result.action.reasonCodes },
+    },
+  ];
 }
 
 async function scenarioEur80(ctx: ScenarioContext): Promise<ScenarioStep[]> {
@@ -293,7 +407,7 @@ async function scenarioConcurrentBudget(ctx: ScenarioContext): Promise<ScenarioS
 }
 
 async function scenarioConnectorTimeout(ctx: ScenarioContext): Promise<ScenarioStep[]> {
-  const faultyDeps = { ...ctx.deps, connector: createFaultInjectingConnector(ctx.deps.connector) };
+  const faultyDeps = { ...ctx.deps, connectors: { ...ctx.deps.connectors, merchant_sandbox: createFaultInjectingConnector(ctx.deps.connectors.merchant_sandbox!) } };
   const body = refundRequest("order_demo_111", 5_000);
   body.grant_id = ctx.seed.rootGrantId;
   const key = `demo-timeout-${Date.now()}`;

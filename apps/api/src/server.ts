@@ -25,13 +25,13 @@ import { registerReconciliationRoutes } from "./routes/reconciliation.js";
 import { registerSecurityRoutes } from "./routes/security.js";
 import type { SubmitActionDeps } from "./gateway/submitAction.js";
 import type { ApprovalDecisionDeps } from "./gateway/approvalResume.js";
-import type { Connector } from "@trustrail/gateway-core";
+import type { ConnectorRegistry } from "@trustrail/gateway-core";
 import { CSRF_HEADER_NAME, SESSION_COOKIE_NAME } from "./auth/session.js";
 
 export interface BuildAppOptions {
   db: Db;
   config: AppConfig;
-  connector: Connector;
+  connectors: ConnectorRegistry;
   gatewayDeps: SubmitActionDeps & ApprovalDecisionDeps;
   demoDeps?: DemoRouteDeps;
 }
@@ -117,7 +117,7 @@ export function buildApp(opts: BuildAppOptions): FastifyInstance {
   registerActionRoutes(app, opts.db, opts.gatewayDeps);
   registerApprovalRoutes(app, opts.db, opts.gatewayDeps);
   registerReceiptRoutes(app, opts.db);
-  registerSimulationRoutes(app, opts.db, opts.connector);
+  registerSimulationRoutes(app, opts.db, opts.connectors);
   registerMetricsRoutes(app, opts.db);
   registerEventRoutes(app, opts.db);
   registerReconciliationRoutes(app, opts.db, opts.gatewayDeps);

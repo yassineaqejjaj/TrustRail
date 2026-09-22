@@ -67,8 +67,9 @@ async function main() {
     GATEWAY_SHARED_SECRET: gatewaySecret, RECEIPT_ISSUER: "trustrail-py-live", SIGNING_KEYS_DIR: keyDir,
     CORS_ORIGIN: "http://localhost:3000", isProduction: false, allowDemoEndpoints: true,
   };
-  const gatewayDeps = { connector, signingKey: { kid: keys.kid, privateJwk: keys.privateJwk }, issuer: config.RECEIPT_ISSUER };
-  const apiApp = buildApp({ db: apiDb, config: config as never, connector, gatewayDeps });
+  const connectors = { merchant_sandbox: connector };
+  const gatewayDeps = { connectors, signingKey: { kid: keys.kid, privateJwk: keys.privateJwk }, issuer: config.RECEIPT_ISSUER };
+  const apiApp = buildApp({ db: apiDb, config: config as never, connectors, gatewayDeps });
   await apiApp.listen({ port: 0, host: "127.0.0.1" });
   const apiAddr = apiApp.server.address();
   const apiBaseUrl = `http://127.0.0.1:${typeof apiAddr === "object" && apiAddr ? apiAddr.port : 0}`;

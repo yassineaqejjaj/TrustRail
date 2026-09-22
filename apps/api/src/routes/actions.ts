@@ -9,6 +9,7 @@ import { authenticateAgent, authenticateUserWithOrg } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
 import { createActionRequestSchema, EXECUTION_STATES, DECISIONS } from "@trustrail/contracts";
 import { submitAction, type SubmitActionDeps } from "../gateway/submitAction.js";
+import { resolveConnector } from "@trustrail/gateway-core";
 
 const TERMINAL_STATES = new Set(["succeeded", "failed", "denied", "cancelled", "expired"]);
 
@@ -60,19 +61,37 @@ export function registerActionRoutes(app: FastifyInstance, db: Db, deps: SubmitA
     agentRoute(db, async (ctx, req, reply) => {
       const params = z.object({ connectorId: z.string(), resourceId: z.string() }).safeParse(req.params);
       if (!params.success) return sendApiError(reply, req, new ApiError(400, "BAD_REQUEST", "invalid request"));
-      if (params.data.connectorId !== deps.connector.connectorId) {
+      const connector = resolveConnector(deps.connectors, params.data.connectorId);
+      if (!connector) {
         return sendApiError(reply, req, new ApiError(404, "NOT_FOUND", "unknown connector"));
       }
-      const order = await deps.connector.lookupOrder({ organizationId: ctx.organizationId, resourceId: params.data.resourceId });
-      if (!order.found) {
+      const resource = await connector.lookupResource({ organizationId: ctx.organizationId, resourceId: params.data.resourceId });
+      if (!resource.found) {
         return sendApiError(reply, req, new ApiError(404, "NOT_FOUND", "resource not found"));
+      }
+      // Shape depends on what kind of resource this connector deals in --
+      // an order (refunds) and a SaaS account (subscription actions) have
+      // different facts worth showing an agent before it decides what to
+      // request.
+      if (resource.kind === "order") {
+        return {
+          resource_id: params.data.resourceId,
+          kind: "order" as const,
+          remaining_amount_minor: resource.remainingAmountMinor,
+          currency: resource.currency,
+          age_days: resource.ageDays,
+          disputed: resource.disputed,
+        };
       }
       return {
         resource_id: params.data.resourceId,
-        remaining_amount_minor: order.remainingAmountMinor,
-        currency: order.currency,
-        age_days: order.ageDays,
-        disputed: order.disputed,
+        kind: "subscription_account" as const,
+        current_plan_id: resource.currentPlanId,
+        active_feature_keys: resource.activeFeatureKeys,
+        user_count: resource.userCount,
+        admin_user_count: resource.adminUserCount,
+        suspended: resource.suspended,
+        currency: resource.currency,
       };
     })
   );

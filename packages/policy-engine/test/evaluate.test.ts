@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_POLICY_BUNDLE } from "@trustrail/contracts";
+import {
+  DEFAULT_POLICY_BUNDLE,
+  DEFAULT_GRANT_CREDIT_POLICY_BUNDLE,
+  DEFAULT_CHANGE_PLAN_POLICY_BUNDLE,
+  DEFAULT_ACTIVATE_FEATURE_POLICY_BUNDLE,
+  DEFAULT_INVITE_USER_POLICY_BUNDLE,
+} from "@trustrail/contracts";
 import { evaluate } from "../src/evaluate.js";
-import type { EvaluationRequest, GrantChainLink, OrderFacts } from "../src/types.js";
+import type { EvaluationRequest, GrantChainLink, OrderFacts, SubscriptionAccountFacts } from "../src/types.js";
 
 const NOW = new Date("2026-09-21T12:00:00Z");
 
@@ -33,6 +39,7 @@ function rootGrant(overrides: Partial<GrantChainLink> = {}): GrantChainLink {
 
 function order(overrides: Partial<OrderFacts> = {}): OrderFacts {
   return {
+    kind: "order",
     found: true,
     ownedByPrincipal: true,
     ageDays: 5,
@@ -52,7 +59,7 @@ function baseRequest(overrides: Partial<EvaluationRequest> = {}): EvaluationRequ
     amountMinor: 8_000,
     currency: "EUR",
     chain: [rootGrant()],
-    order: order(),
+    resource: order(),
     policy: DEFAULT_POLICY_BUNDLE,
     ...overrides,
   };
@@ -151,24 +158,24 @@ describe("evaluate: fail-closed conditions", () => {
   });
 
   it("denies when order state is unavailable (STATE_UNAVAILABLE)", () => {
-    const result = evaluate(baseRequest({ order: { found: false } }));
+    const result = evaluate(baseRequest({ resource: { found: false } }));
     expect(result.decision).toBe("DENY");
     expect(result.reasonCodes).toContain("STATE_UNAVAILABLE");
   });
 
   it("denies a disputed payment when policy requires it", () => {
-    const result = evaluate(baseRequest({ order: order({ disputed: true }) }));
+    const result = evaluate(baseRequest({ resource: order({ disputed: true }) }));
     expect(result.decision).toBe("DENY");
   });
 
   it("denies when the order is not owned by the accountable principal", () => {
-    const result = evaluate(baseRequest({ order: order({ ownedByPrincipal: false }) }));
+    const result = evaluate(baseRequest({ resource: order({ ownedByPrincipal: false }) }));
     expect(result.decision).toBe("DENY");
     expect(result.reasonCodes).toContain("RESOURCE_MISMATCH");
   });
 
   it("denies an amount above the order's remaining refundable balance", () => {
-    const result = evaluate(baseRequest({ amountMinor: 9_000, order: order({ remainingAmountMinor: 5_000 }) }));
+    const result = evaluate(baseRequest({ amountMinor: 9_000, resource: order({ remainingAmountMinor: 5_000 }) }));
     expect(result.decision).toBe("DENY");
     expect(result.reasonCodes).toContain("AMOUNT_LIMIT");
   });
@@ -213,5 +220,140 @@ describe("evaluate: prompt-injection style free text has no effect", () => {
     const withInjection = baseRequest({ amountMinor: 70_000, chain: [rootGrant({ maxAmountMinor: 50_000 })] });
     const result = evaluate(withInjection);
     expect(result.decision).toBe("DENY");
+  });
+});
+
+function subscriptionAccount(overrides: Partial<SubscriptionAccountFacts> = {}): SubscriptionAccountFacts {
+  return {
+    kind: "subscription_account",
+    found: true,
+    suspended: false,
+    currentPlanId: "growth",
+    activeFeatureKeys: [],
+    userCount: 12,
+    adminUserCount: 2,
+    currency: "EUR",
+    ...overrides,
+  };
+}
+
+function subscriptionGrant(action: EvaluationRequest["action"], overrides: Partial<GrantChainLink> = {}): GrantChainLink {
+  return rootGrant({
+    allowedActions: [action],
+    allowedConnectorIds: ["conn_saas_sandbox0000001"],
+    allowedResourceIds: ["account_demo_lea"],
+    ...overrides,
+  });
+}
+
+function subscriptionRequest(action: EvaluationRequest["action"], overrides: Partial<EvaluationRequest> = {}): EvaluationRequest {
+  return {
+    now: NOW,
+    action,
+    resourceId: "account_demo_lea",
+    connectorId: "conn_saas_sandbox0000001",
+    amountMinor: 0,
+    currency: "EUR",
+    arguments: {},
+    chain: [subscriptionGrant(action)],
+    resource: subscriptionAccount(),
+    policy: null,
+    ...overrides,
+  };
+}
+
+describe("evaluate: subscription.grant_credit (reuses money tiering)", () => {
+  it("EUR 100.00 is within the automatic limit -> ALLOW", () => {
+    const result = evaluate(
+      subscriptionRequest("subscription.grant_credit", { amountMinor: 10_000, arguments: { amount_minor: 10_000, currency: "EUR" }, policy: DEFAULT_GRANT_CREDIT_POLICY_BUNDLE })
+    );
+    expect(result.decision).toBe("ALLOW");
+  });
+
+  it("EUR 150.01 exceeds the automatic limit -> REQUIRE_APPROVAL", () => {
+    const result = evaluate(subscriptionRequest("subscription.grant_credit", { amountMinor: 15_001, policy: DEFAULT_GRANT_CREDIT_POLICY_BUNDLE }));
+    expect(result.decision).toBe("REQUIRE_APPROVAL");
+    expect(result.reasonCodes).toContain("APPROVAL_REQUIRED");
+  });
+
+  it("a suspended account is denied before any amount check", () => {
+    const result = evaluate(subscriptionRequest("subscription.grant_credit", { amountMinor: 5_000, resource: subscriptionAccount({ suspended: true }), policy: DEFAULT_GRANT_CREDIT_POLICY_BUNDLE }));
+    expect(result.decision).toBe("DENY");
+    expect(result.reasonCodes).toContain("STATE_UNAVAILABLE");
+  });
+});
+
+describe("evaluate: subscription.change_plan", () => {
+  it("an eligible upgrade is auto-allowed", () => {
+    const result = evaluate(
+      subscriptionRequest("subscription.change_plan", { arguments: { target_plan: "scale" }, resource: subscriptionAccount({ currentPlanId: "growth" }), policy: DEFAULT_CHANGE_PLAN_POLICY_BUNDLE })
+    );
+    expect(result.decision).toBe("ALLOW");
+  });
+
+  it("a plan outside the eligible list is denied outright (PLAN_NOT_ELIGIBLE), not held for approval", () => {
+    const result = evaluate(subscriptionRequest("subscription.change_plan", { arguments: { target_plan: "enterprise" }, policy: DEFAULT_CHANGE_PLAN_POLICY_BUNDLE }));
+    expect(result.decision).toBe("DENY");
+    expect(result.reasonCodes).toContain("PLAN_NOT_ELIGIBLE");
+  });
+
+  it("an eligible downgrade requires approval when the policy says so", () => {
+    const result = evaluate(
+      subscriptionRequest("subscription.change_plan", { arguments: { target_plan: "starter" }, resource: subscriptionAccount({ currentPlanId: "growth" }), policy: DEFAULT_CHANGE_PLAN_POLICY_BUNDLE })
+    );
+    expect(result.decision).toBe("REQUIRE_APPROVAL");
+  });
+
+  it("resuming an eligible downgrade with status=approved returns ALLOW", () => {
+    const req = subscriptionRequest("subscription.change_plan", {
+      arguments: { target_plan: "starter" },
+      resource: subscriptionAccount({ currentPlanId: "growth" }),
+      policy: DEFAULT_CHANGE_PLAN_POLICY_BUNDLE,
+      approval: { status: "approved" },
+    });
+    expect(evaluate(req).decision).toBe("ALLOW");
+  });
+});
+
+describe("evaluate: subscription.activate_feature (pure allow-list, no approval tier)", () => {
+  it("an allowed feature is auto-allowed", () => {
+    const result = evaluate(subscriptionRequest("subscription.activate_feature", { arguments: { feature_key: "sso" }, policy: DEFAULT_ACTIVATE_FEATURE_POLICY_BUNDLE }));
+    expect(result.decision).toBe("ALLOW");
+  });
+
+  it("a feature outside the allow-list is denied, never held for approval", () => {
+    const result = evaluate(subscriptionRequest("subscription.activate_feature", { arguments: { feature_key: "white_label" }, policy: DEFAULT_ACTIVATE_FEATURE_POLICY_BUNDLE }));
+    expect(result.decision).toBe("DENY");
+    expect(result.reasonCodes).toContain("FEATURE_NOT_ALLOWED");
+  });
+});
+
+describe("evaluate: subscription.invite_user (models the product brief's onboarding example)", () => {
+  it("an allowed role is auto-allowed", () => {
+    const result = evaluate(subscriptionRequest("subscription.invite_user", { arguments: { email: "lea@example.com", role: "member" }, policy: DEFAULT_INVITE_USER_POLICY_BUNDLE }));
+    expect(result.decision).toBe("ALLOW");
+  });
+
+  it("the admin role is a hard block, never approvable, even though 'no admin rights' could otherwise read as an exception", () => {
+    const result = evaluate(subscriptionRequest("subscription.invite_user", { arguments: { email: "lea@example.com", role: "admin" }, policy: DEFAULT_INVITE_USER_POLICY_BUNDLE }));
+    expect(result.decision).toBe("DENY");
+    expect(result.reasonCodes).toContain("ROLE_NOT_ALLOWED");
+  });
+
+  it("a role outside the normal allow-list (but not admin) is an exception that requires approval", () => {
+    const result = evaluate(subscriptionRequest("subscription.invite_user", { arguments: { email: "lea@example.com", role: "contractor" }, policy: DEFAULT_INVITE_USER_POLICY_BUNDLE }));
+    expect(result.decision).toBe("REQUIRE_APPROVAL");
+    expect(result.reasonCodes).toContain("APPROVAL_REQUIRED");
+  });
+
+  it("resuming a rejected exception-role invite returns DENY with APPROVAL_REJECTED", () => {
+    const req = subscriptionRequest("subscription.invite_user", {
+      arguments: { email: "lea@example.com", role: "contractor" },
+      policy: DEFAULT_INVITE_USER_POLICY_BUNDLE,
+      approval: { status: "rejected" },
+    });
+    const result = evaluate(req);
+    expect(result.decision).toBe("DENY");
+    expect(result.reasonCodes).toContain("APPROVAL_REJECTED");
   });
 });
