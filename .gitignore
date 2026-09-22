@@ -27,3 +27,8 @@ sdk/python/*.egg-info/
 .pytest_cache/
 docs/screenshots/*.png
 !docs/screenshots/.gitkeep
+.vercel
+.env*
+.railway/node_modules/
+.railway/package.json
+.railway/package-lock.json

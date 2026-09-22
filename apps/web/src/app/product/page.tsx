@@ -65,18 +65,41 @@ export default function ProductPage() {
 
       <section className="mx-auto max-w-4xl px-6 pb-24">
         <div className="glass p-8">
-          <h2 className="text-lg font-semibold text-ink">First use case: agent-issued refunds</h2>
+          <h2 className="text-lg font-semibold text-ink">Two use cases, one control model</h2>
           <p className="mt-3 text-sm text-muted">
-            A customer-support agent that can issue refunds through a synthetic merchant sandbox, constrained by a
-            delegated grant (amount cap, daily budget, approval threshold), producing signed receipts of every
-            decision and execution. Money is not real in this version — this validates the control and evidence
-            model before touching a live payment processor.
+            The same grant/policy/receipt engine enforces two independent connectors today, proving the architecture
+            is genuinely action-agnostic rather than built around refunds specifically.
+          </p>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Agent-issued refunds</h3>
+              <p className="mt-2 text-sm text-muted">
+                A customer-support agent issues refunds through a synthetic merchant sandbox, constrained by a
+                delegated grant (amount cap, daily budget, approval threshold), producing signed receipts of every
+                decision and execution. Money is not real in this version.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-ink">SaaS account &amp; subscription management</h3>
+              <p className="mt-2 text-sm text-muted">
+                An IT onboarding agent grants license credit, changes a plan, activates a feature, or invites a user
+                against a synthetic SaaS sandbox — each action with its own limits: a hard allow-list for which plans
+                are eligible, a downgrade that always needs human approval, a feature flag that&rsquo;s a pure
+                allow/deny gate, and an invite that hard-blocks admin roles while escalating any other exception to a
+                reviewer. Recreates a real worked example directly: &ldquo;grant a new hire access for 30 days, no
+                admin rights, and up to EUR 150 of licenses — require approval for any exception.&rdquo;
+              </p>
+            </div>
+          </div>
+          <p className="mt-5 text-sm text-muted">
+            TrustRail doesn&rsquo;t judge whether a plan change is a good idea or a message is true — it enforces the
+            limits a human already decided, and asks for a decision when a request falls outside them.
           </p>
           <h2 className="mt-6 text-lg font-semibold text-ink">What&rsquo;s actually verified</h2>
           <p className="mt-3 text-sm text-muted">
             Every capability above is covered by automated tests run against a real, non-mocked PostgreSQL instance
-            and a real HTTP merchant sandbox, plus a live Docker Compose deployment and a passing CI run — not just
-            described. This site makes no claims about customers, revenue, or third-party endorsement.
+            and real HTTP sandboxes for both connectors, plus a live Docker Compose deployment and a passing CI run —
+            not just described. This site makes no claims about customers, revenue, or third-party endorsement.
           </p>
         </div>
       </section>

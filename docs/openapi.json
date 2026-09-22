@@ -1488,7 +1488,11 @@
                     "items": {
                       "type": "string",
                       "enum": [
-                        "refund.create"
+                        "refund.create",
+                        "subscription.grant_credit",
+                        "subscription.change_plan",
+                        "subscription.activate_feature",
+                        "subscription.invite_user"
                       ]
                     },
                     "minItems": 1
@@ -1770,80 +1774,308 @@
                                   "type": "number"
                                 },
                                 "bundle": {
-                                  "type": "object",
-                                  "properties": {
-                                    "schema_version": {
-                                      "type": "string",
-                                      "enum": [
-                                        "1"
-                                      ]
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "schema_version": {
+                                          "type": "string",
+                                          "enum": [
+                                            "1"
+                                          ]
+                                        },
+                                        "currency": {
+                                          "type": "string",
+                                          "enum": [
+                                            "EUR"
+                                          ]
+                                        },
+                                        "root_daily_limit_minor": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 1000000000
+                                        },
+                                        "approval_ttl_seconds": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 86400
+                                        },
+                                        "action": {
+                                          "type": "string",
+                                          "enum": [
+                                            "refund.create"
+                                          ]
+                                        },
+                                        "automatic_limit_minor": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 1000000000
+                                        },
+                                        "approval_limit_minor": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 1000000000
+                                        },
+                                        "require_original_payment_destination": {
+                                          "type": "boolean"
+                                        },
+                                        "require_order_ownership": {
+                                          "type": "boolean"
+                                        },
+                                        "max_order_age_days": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 3650
+                                        },
+                                        "deny_if_payment_disputed": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "schema_version",
+                                        "currency",
+                                        "root_daily_limit_minor",
+                                        "approval_ttl_seconds",
+                                        "action",
+                                        "automatic_limit_minor",
+                                        "approval_limit_minor",
+                                        "require_original_payment_destination",
+                                        "require_order_ownership",
+                                        "max_order_age_days",
+                                        "deny_if_payment_disputed"
+                                      ],
+                                      "additionalProperties": false
                                     },
-                                    "action": {
-                                      "type": "string",
-                                      "enum": [
-                                        "refund.create"
-                                      ]
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "schema_version": {
+                                          "type": "string",
+                                          "enum": [
+                                            "1"
+                                          ]
+                                        },
+                                        "currency": {
+                                          "type": "string",
+                                          "enum": [
+                                            "EUR"
+                                          ]
+                                        },
+                                        "root_daily_limit_minor": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 1000000000
+                                        },
+                                        "approval_ttl_seconds": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 86400
+                                        },
+                                        "action": {
+                                          "type": "string",
+                                          "enum": [
+                                            "subscription.grant_credit"
+                                          ]
+                                        },
+                                        "automatic_limit_minor": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 1000000000
+                                        },
+                                        "approval_limit_minor": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 1000000000
+                                        }
+                                      },
+                                      "required": [
+                                        "schema_version",
+                                        "currency",
+                                        "root_daily_limit_minor",
+                                        "approval_ttl_seconds",
+                                        "action",
+                                        "automatic_limit_minor",
+                                        "approval_limit_minor"
+                                      ],
+                                      "additionalProperties": false
                                     },
-                                    "currency": {
-                                      "type": "string",
-                                      "enum": [
-                                        "EUR"
-                                      ]
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "schema_version": {
+                                          "type": "string",
+                                          "enum": [
+                                            "1"
+                                          ]
+                                        },
+                                        "currency": {
+                                          "type": "string",
+                                          "enum": [
+                                            "EUR"
+                                          ]
+                                        },
+                                        "root_daily_limit_minor": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 1000000000
+                                        },
+                                        "approval_ttl_seconds": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 86400
+                                        },
+                                        "action": {
+                                          "type": "string",
+                                          "enum": [
+                                            "subscription.change_plan"
+                                          ]
+                                        },
+                                        "eligible_target_plans": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 50
+                                          },
+                                          "minItems": 1
+                                        },
+                                        "require_approval_for_downgrade": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "schema_version",
+                                        "currency",
+                                        "root_daily_limit_minor",
+                                        "approval_ttl_seconds",
+                                        "action",
+                                        "eligible_target_plans",
+                                        "require_approval_for_downgrade"
+                                      ],
+                                      "additionalProperties": false
                                     },
-                                    "automatic_limit_minor": {
-                                      "type": "integer",
-                                      "minimum": 0,
-                                      "exclusiveMinimum": true,
-                                      "maximum": 1000000000
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "schema_version": {
+                                          "type": "string",
+                                          "enum": [
+                                            "1"
+                                          ]
+                                        },
+                                        "currency": {
+                                          "type": "string",
+                                          "enum": [
+                                            "EUR"
+                                          ]
+                                        },
+                                        "root_daily_limit_minor": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 1000000000
+                                        },
+                                        "approval_ttl_seconds": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 86400
+                                        },
+                                        "action": {
+                                          "type": "string",
+                                          "enum": [
+                                            "subscription.activate_feature"
+                                          ]
+                                        },
+                                        "allowed_feature_keys": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 50
+                                          },
+                                          "minItems": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "schema_version",
+                                        "currency",
+                                        "root_daily_limit_minor",
+                                        "approval_ttl_seconds",
+                                        "action",
+                                        "allowed_feature_keys"
+                                      ],
+                                      "additionalProperties": false
                                     },
-                                    "approval_limit_minor": {
-                                      "type": "integer",
-                                      "minimum": 0,
-                                      "exclusiveMinimum": true,
-                                      "maximum": 1000000000
-                                    },
-                                    "root_daily_limit_minor": {
-                                      "type": "integer",
-                                      "minimum": 0,
-                                      "exclusiveMinimum": true,
-                                      "maximum": 1000000000
-                                    },
-                                    "require_original_payment_destination": {
-                                      "type": "boolean"
-                                    },
-                                    "require_order_ownership": {
-                                      "type": "boolean"
-                                    },
-                                    "max_order_age_days": {
-                                      "type": "integer",
-                                      "minimum": 0,
-                                      "exclusiveMinimum": true,
-                                      "maximum": 3650
-                                    },
-                                    "deny_if_payment_disputed": {
-                                      "type": "boolean"
-                                    },
-                                    "approval_ttl_seconds": {
-                                      "type": "integer",
-                                      "minimum": 0,
-                                      "exclusiveMinimum": true,
-                                      "maximum": 86400
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "schema_version": {
+                                          "type": "string",
+                                          "enum": [
+                                            "1"
+                                          ]
+                                        },
+                                        "currency": {
+                                          "type": "string",
+                                          "enum": [
+                                            "EUR"
+                                          ]
+                                        },
+                                        "root_daily_limit_minor": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 1000000000
+                                        },
+                                        "approval_ttl_seconds": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "exclusiveMinimum": true,
+                                          "maximum": 86400
+                                        },
+                                        "action": {
+                                          "type": "string",
+                                          "enum": [
+                                            "subscription.invite_user"
+                                          ]
+                                        },
+                                        "allowed_roles": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 50
+                                          },
+                                          "minItems": 1
+                                        },
+                                        "disallow_admin_role": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "schema_version",
+                                        "currency",
+                                        "root_daily_limit_minor",
+                                        "approval_ttl_seconds",
+                                        "action",
+                                        "allowed_roles",
+                                        "disallow_admin_role"
+                                      ],
+                                      "additionalProperties": false
                                     }
-                                  },
-                                  "required": [
-                                    "schema_version",
-                                    "action",
-                                    "currency",
-                                    "automatic_limit_minor",
-                                    "approval_limit_minor",
-                                    "root_daily_limit_minor",
-                                    "require_original_payment_destination",
-                                    "require_order_ownership",
-                                    "max_order_age_days",
-                                    "deny_if_payment_disputed",
-                                    "approval_ttl_seconds"
-                                  ],
-                                  "additionalProperties": false
+                                  ]
                                 },
                                 "bundle_hash": {
                                   "type": "string"
@@ -1929,80 +2161,308 @@
                     ]
                   },
                   "bundle": {
-                    "type": "object",
-                    "properties": {
-                      "schema_version": {
-                        "type": "string",
-                        "enum": [
-                          "1"
-                        ]
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "refund.create"
+                            ]
+                          },
+                          "automatic_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "require_original_payment_destination": {
+                            "type": "boolean"
+                          },
+                          "require_order_ownership": {
+                            "type": "boolean"
+                          },
+                          "max_order_age_days": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 3650
+                          },
+                          "deny_if_payment_disputed": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "automatic_limit_minor",
+                          "approval_limit_minor",
+                          "require_original_payment_destination",
+                          "require_order_ownership",
+                          "max_order_age_days",
+                          "deny_if_payment_disputed"
+                        ],
+                        "additionalProperties": false
                       },
-                      "action": {
-                        "type": "string",
-                        "enum": [
-                          "refund.create"
-                        ]
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "subscription.grant_credit"
+                            ]
+                          },
+                          "automatic_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "automatic_limit_minor",
+                          "approval_limit_minor"
+                        ],
+                        "additionalProperties": false
                       },
-                      "currency": {
-                        "type": "string",
-                        "enum": [
-                          "EUR"
-                        ]
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "subscription.change_plan"
+                            ]
+                          },
+                          "eligible_target_plans": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 50
+                            },
+                            "minItems": 1
+                          },
+                          "require_approval_for_downgrade": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "eligible_target_plans",
+                          "require_approval_for_downgrade"
+                        ],
+                        "additionalProperties": false
                       },
-                      "automatic_limit_minor": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 1000000000
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "subscription.activate_feature"
+                            ]
+                          },
+                          "allowed_feature_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 50
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "allowed_feature_keys"
+                        ],
+                        "additionalProperties": false
                       },
-                      "approval_limit_minor": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 1000000000
-                      },
-                      "root_daily_limit_minor": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 1000000000
-                      },
-                      "require_original_payment_destination": {
-                        "type": "boolean"
-                      },
-                      "require_order_ownership": {
-                        "type": "boolean"
-                      },
-                      "max_order_age_days": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 3650
-                      },
-                      "deny_if_payment_disputed": {
-                        "type": "boolean"
-                      },
-                      "approval_ttl_seconds": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 86400
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "subscription.invite_user"
+                            ]
+                          },
+                          "allowed_roles": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 50
+                            },
+                            "minItems": 1
+                          },
+                          "disallow_admin_role": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "allowed_roles",
+                          "disallow_admin_role"
+                        ],
+                        "additionalProperties": false
                       }
-                    },
-                    "required": [
-                      "schema_version",
-                      "action",
-                      "currency",
-                      "automatic_limit_minor",
-                      "approval_limit_minor",
-                      "root_daily_limit_minor",
-                      "require_original_payment_destination",
-                      "require_order_ownership",
-                      "max_order_age_days",
-                      "deny_if_payment_disputed",
-                      "approval_ttl_seconds"
-                    ],
-                    "additionalProperties": false
+                    ]
                   }
                 },
                 "required": [
@@ -2081,80 +2541,308 @@
                 "type": "object",
                 "properties": {
                   "bundle": {
-                    "type": "object",
-                    "properties": {
-                      "schema_version": {
-                        "type": "string",
-                        "enum": [
-                          "1"
-                        ]
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "refund.create"
+                            ]
+                          },
+                          "automatic_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "require_original_payment_destination": {
+                            "type": "boolean"
+                          },
+                          "require_order_ownership": {
+                            "type": "boolean"
+                          },
+                          "max_order_age_days": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 3650
+                          },
+                          "deny_if_payment_disputed": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "automatic_limit_minor",
+                          "approval_limit_minor",
+                          "require_original_payment_destination",
+                          "require_order_ownership",
+                          "max_order_age_days",
+                          "deny_if_payment_disputed"
+                        ],
+                        "additionalProperties": false
                       },
-                      "action": {
-                        "type": "string",
-                        "enum": [
-                          "refund.create"
-                        ]
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "subscription.grant_credit"
+                            ]
+                          },
+                          "automatic_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "automatic_limit_minor",
+                          "approval_limit_minor"
+                        ],
+                        "additionalProperties": false
                       },
-                      "currency": {
-                        "type": "string",
-                        "enum": [
-                          "EUR"
-                        ]
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "subscription.change_plan"
+                            ]
+                          },
+                          "eligible_target_plans": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 50
+                            },
+                            "minItems": 1
+                          },
+                          "require_approval_for_downgrade": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "eligible_target_plans",
+                          "require_approval_for_downgrade"
+                        ],
+                        "additionalProperties": false
                       },
-                      "automatic_limit_minor": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 1000000000
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "subscription.activate_feature"
+                            ]
+                          },
+                          "allowed_feature_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 50
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "allowed_feature_keys"
+                        ],
+                        "additionalProperties": false
                       },
-                      "approval_limit_minor": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 1000000000
-                      },
-                      "root_daily_limit_minor": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 1000000000
-                      },
-                      "require_original_payment_destination": {
-                        "type": "boolean"
-                      },
-                      "require_order_ownership": {
-                        "type": "boolean"
-                      },
-                      "max_order_age_days": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 3650
-                      },
-                      "deny_if_payment_disputed": {
-                        "type": "boolean"
-                      },
-                      "approval_ttl_seconds": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 86400
+                      {
+                        "type": "object",
+                        "properties": {
+                          "schema_version": {
+                            "type": "string",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "root_daily_limit_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "approval_ttl_seconds": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 86400
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "subscription.invite_user"
+                            ]
+                          },
+                          "allowed_roles": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 50
+                            },
+                            "minItems": 1
+                          },
+                          "disallow_admin_role": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "schema_version",
+                          "currency",
+                          "root_daily_limit_minor",
+                          "approval_ttl_seconds",
+                          "action",
+                          "allowed_roles",
+                          "disallow_admin_role"
+                        ],
+                        "additionalProperties": false
                       }
-                    },
-                    "required": [
-                      "schema_version",
-                      "action",
-                      "currency",
-                      "automatic_limit_minor",
-                      "approval_limit_minor",
-                      "root_daily_limit_minor",
-                      "require_original_payment_destination",
-                      "require_order_ownership",
-                      "max_order_age_days",
-                      "deny_if_payment_disputed",
-                      "approval_ttl_seconds"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "change_reason": {
                     "type": "string",
@@ -2320,63 +3008,284 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "grant_id": {
-                    "type": "string",
-                    "pattern": "^grant_[a-zA-Z0-9]{20,}$"
-                  },
-                  "connector_id": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]{1,63}$"
-                  },
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "refund.create"
-                    ]
-                  },
-                  "resource_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 200
-                  },
-                  "arguments": {
+                "oneOf": [
+                  {
                     "type": "object",
                     "properties": {
-                      "amount_minor": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 1000000000
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
                       },
-                      "currency": {
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
                         "type": "string",
                         "enum": [
-                          "EUR"
+                          "refund.create"
                         ]
                       },
-                      "reason": {
-                        "type": "string",
-                        "maxLength": 500,
-                        "default": ""
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "amount_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "amount_minor",
+                          "currency"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
-                      "amount_minor",
-                      "currency"
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                      },
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "subscription.grant_credit"
+                        ]
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "amount_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "amount_minor",
+                          "currency"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                      },
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "subscription.change_plan"
+                        ]
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "target_plan": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "target_plan"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                      },
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "subscription.activate_feature"
+                        ]
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "feature_key": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "feature_key"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                      },
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "subscription.invite_user"
+                        ]
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "string",
+                            "format": "email"
+                          },
+                          "role": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "email",
+                          "role"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
                     ],
                     "additionalProperties": false
                   }
-                },
-                "required": [
-                  "grant_id",
-                  "connector_id",
-                  "action",
-                  "resource_id",
-                  "arguments"
-                ],
-                "additionalProperties": false
+                ]
               }
             }
           }
@@ -2429,7 +3338,10 @@
                           "IDEMPOTENCY_CONFLICT",
                           "POLICY_UNAVAILABLE",
                           "CREDENTIAL_REVOKED",
-                          "INTERNAL_ERROR"
+                          "INTERNAL_ERROR",
+                          "PLAN_NOT_ELIGIBLE",
+                          "FEATURE_NOT_ALLOWED",
+                          "ROLE_NOT_ALLOWED"
                         ]
                       }
                     },
@@ -2502,63 +3414,284 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "grant_id": {
-                    "type": "string",
-                    "pattern": "^grant_[a-zA-Z0-9]{20,}$"
-                  },
-                  "connector_id": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]{1,63}$"
-                  },
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "refund.create"
-                    ]
-                  },
-                  "resource_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 200
-                  },
-                  "arguments": {
+                "oneOf": [
+                  {
                     "type": "object",
                     "properties": {
-                      "amount_minor": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "maximum": 1000000000
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
                       },
-                      "currency": {
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
                         "type": "string",
                         "enum": [
-                          "EUR"
+                          "refund.create"
                         ]
                       },
-                      "reason": {
-                        "type": "string",
-                        "maxLength": 500,
-                        "default": ""
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "amount_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "amount_minor",
+                          "currency"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
-                      "amount_minor",
-                      "currency"
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                      },
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "subscription.grant_credit"
+                        ]
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "amount_minor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "exclusiveMinimum": true,
+                            "maximum": 1000000000
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "amount_minor",
+                          "currency"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                      },
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "subscription.change_plan"
+                        ]
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "target_plan": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "target_plan"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                      },
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "subscription.activate_feature"
+                        ]
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "feature_key": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "feature_key"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "grant_id": {
+                        "type": "string",
+                        "pattern": "^grant_[a-zA-Z0-9]{20,}$"
+                      },
+                      "connector_id": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{1,63}$"
+                      },
+                      "resource_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "subscription.invite_user"
+                        ]
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "string",
+                            "format": "email"
+                          },
+                          "role": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 50
+                          },
+                          "reason": {
+                            "type": "string",
+                            "maxLength": 500,
+                            "default": ""
+                          }
+                        },
+                        "required": [
+                          "email",
+                          "role"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "grant_id",
+                      "connector_id",
+                      "resource_id",
+                      "action",
+                      "arguments"
                     ],
                     "additionalProperties": false
                   }
-                },
-                "required": [
-                  "grant_id",
-                  "connector_id",
-                  "action",
-                  "resource_id",
-                  "arguments"
-                ],
-                "additionalProperties": false
+                ]
               }
             }
           }
@@ -2633,7 +3766,10 @@
                           "IDEMPOTENCY_CONFLICT",
                           "POLICY_UNAVAILABLE",
                           "CREDENTIAL_REVOKED",
-                          "INTERNAL_ERROR"
+                          "INTERNAL_ERROR",
+                          "PLAN_NOT_ELIGIBLE",
+                          "FEATURE_NOT_ALLOWED",
+                          "ROLE_NOT_ALLOWED"
                         ]
                       }
                     },
@@ -2846,7 +3982,10 @@
                           "IDEMPOTENCY_CONFLICT",
                           "POLICY_UNAVAILABLE",
                           "CREDENTIAL_REVOKED",
-                          "INTERNAL_ERROR"
+                          "INTERNAL_ERROR",
+                          "PLAN_NOT_ELIGIBLE",
+                          "FEATURE_NOT_ALLOWED",
+                          "ROLE_NOT_ALLOWED"
                         ]
                       }
                     },
@@ -3191,7 +4330,10 @@
                                 "IDEMPOTENCY_CONFLICT",
                                 "POLICY_UNAVAILABLE",
                                 "CREDENTIAL_REVOKED",
-                                "INTERNAL_ERROR"
+                                "INTERNAL_ERROR",
+                                "PLAN_NOT_ELIGIBLE",
+                                "FEATURE_NOT_ALLOWED",
+                                "ROLE_NOT_ALLOWED"
                               ]
                             }
                           },
@@ -3423,7 +4565,10 @@
                           "IDEMPOTENCY_CONFLICT",
                           "POLICY_UNAVAILABLE",
                           "CREDENTIAL_REVOKED",
-                          "INTERNAL_ERROR"
+                          "INTERNAL_ERROR",
+                          "PLAN_NOT_ELIGIBLE",
+                          "FEATURE_NOT_ALLOWED",
+                          "ROLE_NOT_ALLOWED"
                         ]
                       }
                     },
@@ -4347,7 +5492,11 @@
                         "action": {
                           "type": "string",
                           "enum": [
-                            "refund.create"
+                            "refund.create",
+                            "subscription.grant_credit",
+                            "subscription.change_plan",
+                            "subscription.activate_feature",
+                            "subscription.invite_user"
                           ]
                         },
                         "resource_id": {
@@ -4397,7 +5546,10 @@
                               "IDEMPOTENCY_CONFLICT",
                               "POLICY_UNAVAILABLE",
                               "CREDENTIAL_REVOKED",
-                              "INTERNAL_ERROR"
+                              "INTERNAL_ERROR",
+                              "PLAN_NOT_ELIGIBLE",
+                              "FEATURE_NOT_ALLOWED",
+                              "ROLE_NOT_ALLOWED"
                             ]
                           }
                         },
@@ -4621,7 +5773,7 @@
           "Demo"
         ],
         "summary": "Run a demo scenario (Operator+, local/demo mode only)",
-        "description": "scenario_key is one of: eur80_auto_refund, eur350_approval, eur700_denied, prompt_injection_deny, child_cap_rejected, root_revoked_denied, idempotent_replay, idempotency_conflict, receipt_tamper_detected, concurrent_budget_limit, connector_timeout_reconciled, direct_merchant_write_rejected, order_not_owned_denied. Only works inside the seeded Northstar Commerce organization.",
+        "description": "scenario_key is one of: eur80_auto_refund, eur350_approval, eur700_denied, prompt_injection_deny, child_cap_rejected, root_revoked_denied, idempotent_replay, idempotency_conflict, receipt_tamper_detected, concurrent_budget_limit, connector_timeout_reconciled, direct_merchant_write_rejected, order_not_owned_denied, lea_onboarding_completed, lea_admin_invite_blocked, subscription_plan_downgrade_approval, subscription_feature_activation_denied. Only works inside the seeded Northstar Commerce organization.",
         "security": [
           {
             "SessionCookie": []
@@ -4653,7 +5805,11 @@
                       "concurrent_budget_limit",
                       "connector_timeout_reconciled",
                       "direct_merchant_write_rejected",
-                      "order_not_owned_denied"
+                      "order_not_owned_denied",
+                      "lea_onboarding_completed",
+                      "lea_admin_invite_blocked",
+                      "subscription_plan_downgrade_approval",
+                      "subscription_feature_activation_denied"
                     ]
                   }
                 },

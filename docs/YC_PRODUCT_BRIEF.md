@@ -25,6 +25,21 @@ budget, approval threshold) and producing signed receipts of every decision
 and execution. Money is not real in V1 — this validates the control and
 evidence model before touching a live payment processor.
 
+## Second use case
+
+SaaS B2B account/subscription management: an IT onboarding agent granting
+license credit, changing a plan, activating a feature, or inviting a user,
+against a synthetic SaaS sandbox — chosen specifically to pressure-test
+whether the control model generalizes past refunds, not because it's the
+obvious next market. Each action carries its own enforcement shape rather
+than a copy of refund's tiers: a hard allow-list for eligible plans, a
+downgrade that always needs approval, a feature flag that's a pure
+allow/deny gate, and an admin-role invite that's hard-blocked while any
+other disallowed role escalates to a reviewer. Recreates a concrete
+worked mandate directly: "grant a new hire access for 30 days, no admin
+rights, and up to EUR 150 of licenses — require approval for any
+exception."
+
 ## Product (what actually exists today)
 
 An enforcement gateway that owns the downstream (merchant) credential so an
@@ -40,9 +55,9 @@ built: `docs/BUILD_STATUS.md`.
 ## What works (verified, not claimed)
 
 All of the above is covered by automated tests run against a real
-(non-mocked) PostgreSQL instance and a real HTTP merchant sandbox — see
-`docs/TEST_REPORT.md` for actual commands and actual results, and the 12
-scenarios in `docs/PRODUCT_SPEC.md` section 14, each passing via
+(non-mocked) PostgreSQL instance and real HTTP merchant and SaaS sandboxes —
+see `docs/TEST_REPORT.md` for actual commands and actual results, and the
+17 Demo Lab scenarios (`apps/api/src/demo/scenarios.ts`), each passing via
 `pnpm demo:run`.
 
 ## Alternatives

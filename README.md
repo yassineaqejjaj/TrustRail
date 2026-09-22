@@ -8,9 +8,11 @@ operation it answers: which agent requested it, who authorized that agent,
 what limits apply, whether it was permitted, blocked or held for approval,
 and what evidence supports the outcome.
 
-This is the V1 implementation described in [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md).
-The first (and only, in V1) use case is a synthetic customer-support refund
-agent, acting against a synthetic merchant sandbox. **No real money moves.**
+This is the V1 implementation described in [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md),
+now covering two use cases: a synthetic customer-support refund agent
+acting against a synthetic merchant sandbox, and a SaaS B2B account/subscription
+agent (grant credit, change plan, activate a feature, invite a user) acting
+against a synthetic SaaS sandbox. **No real money moves.**
 
 Read [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) for exactly what is
 implemented, tested, and known-limited as of the latest session — this
@@ -23,6 +25,7 @@ apps/web              Next.js dashboard
 apps/api              Fastify gateway API (auth, grants, policies, actions, approvals, receipts)
 apps/worker           Thin wrapper around apps/api's execution-job poller (see docs/DECISIONS.md)
 apps/merchant-sandbox  Synthetic merchant: orders, payments, idempotent refunds
+apps/saas-sandbox      Synthetic SaaS: accounts, plans, features, users, idempotent actions
 packages/contracts     Shared zod schemas, enums, canonicalization
 packages/policy-engine  Pure policy evaluation + grant chain validation (no DB, no I/O)
 packages/receipt-verifier  Ed25519 JWS signing/verification
@@ -54,14 +57,15 @@ docs/                   Everything listed below
 ```bash
 pnpm install --frozen-lockfile
 pnpm setup:local     # provisions local Postgres, roles, migrations, a signing key, and .env
-pnpm dev             # starts the API (:4000), merchant sandbox (:4100), and web (:3000)
+pnpm dev             # starts the API (:4000), merchant sandbox (:4100), saas sandbox (:4200), and web (:3000)
 ```
 
 Then, in another terminal:
 
 ```bash
 pnpm demo:seed       # seeds the "Northstar Commerce" fictional org + demo users/agents/grants
-pnpm demo:run eur80_auto_refund   # runs one deterministic scenario end to end
+pnpm demo:run eur80_auto_refund          # a refund scenario, end to end
+pnpm demo:run lea_onboarding_completed   # a SaaS subscription scenario, end to end
 ```
 
 `pnpm demo:seed` prints the demo accounts' emails and a shared password, and

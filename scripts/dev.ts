@@ -29,6 +29,7 @@ async function main() {
   };
 
   spawnDev("merchant-sandbox", path.join(ROOT, "apps", "merchant-sandbox"), { PORT: env.MERCHANT_SANDBOX_PORT ?? "4100" });
+  spawnDev("saas-sandbox", path.join(ROOT, "apps", "saas-sandbox"), { PORT: env.SAAS_SANDBOX_PORT ?? "4200" });
   spawnDev("api", path.join(ROOT, "apps", "api"));
 
   const webDir = path.join(ROOT, "apps", "web");

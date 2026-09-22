@@ -132,7 +132,7 @@ export default function LandingPage() {
           <div className="border-t border-border p-6">
             <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted">Recent activity</p>
             <div className="space-y-2">
-              {["refund.create · order_demo_101", "refund.create · order_demo_102", "refund.create · order_demo_103"].map(
+              {["refund.create · order_demo_101", "subscription.invite_user · account_demo_lea", "subscription.grant_credit · account_demo_lea"].map(
                 (row) => (
                   <div key={row} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
                     <span className="mono text-ink">{row}</span>
