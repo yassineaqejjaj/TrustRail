@@ -129,7 +129,7 @@ function ApprovalCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-medium text-ink">
-            {approval.action?.action ?? "refund.create"} on <Mono>{approval.action?.resource_id ?? "unknown"}</Mono>
+            {approval.action?.action ?? "action"} on <Mono>{approval.action?.resource_id ?? "unknown"}</Mono>
           </p>
           <p className="mt-1 text-2xl font-semibold text-ink">{formatMoney(approval.amount_minor, approval.currency)}</p>
         </div>
@@ -154,8 +154,8 @@ function ApprovalCard({
       <div className="mt-4 flex gap-2">
         <ConfirmDialog
           trigger={<Button variant="primary">Approve</Button>}
-          title="Approve this refund?"
-          description="This authorizes exactly this request, with its exact amount, resource, and policy version. It cannot be reused for a different payload."
+          title={`Approve this ${approval.action?.action ?? "request"}?`}
+          description="This authorizes exactly this request, with its exact resource and policy version. It cannot be reused for a different payload."
           confirmLabel="Approve"
           danger={false}
           requireReason={false}
@@ -163,7 +163,7 @@ function ApprovalCard({
             try {
               await approvalsApi.approve(orgId, approval.approval_id, "");
               onDecided();
-              toast.success("Approved", "Dispatch to the merchant sandbox has been triggered.");
+              toast.success("Approved", "Dispatch to the connector has been triggered.");
             } catch (err) {
               toast.error("Could not approve", err instanceof Error ? err.message : "");
               throw err;

@@ -7,7 +7,7 @@ import { approvals, actions } from "@trustrail/db";
 import { userRoute } from "../http/handlers.js";
 import { requireRole } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
-import { decideApprovalRequestSchema } from "@trustrail/contracts";
+import { decideApprovalRequestSchema, isMoneyAction, type ActionName } from "@trustrail/contracts";
 import { decideApproval, type ApprovalDecisionDeps } from "../gateway/approvalResume.js";
 
 export function registerApprovalRoutes(app: FastifyInstance, db: Db, deps: ApprovalDecisionDeps) {
@@ -32,23 +32,33 @@ export function registerApprovalRoutes(app: FastifyInstance, db: Db, deps: Appro
       });
 
       return {
-        approvals: rows.map(({ approval, action }) => ({
-          approval_id: approval.id,
-          action_id: approval.actionId,
-          principal_id: approval.principalId,
-          grant_chain_ids: approval.grantChainIds,
-          amount_minor: approval.amountMinor,
-          currency: approval.currency,
-          triggering_rule: approval.triggeringRule,
-          status: approval.status,
-          expires_at: approval.expiresAt,
-          created_at: approval.createdAt,
-          reviewer_user_id: approval.reviewerUserId,
-          decided_at: approval.decidedAt,
-          action: action
-            ? { resource_id: action.resourceId, action: action.action, actor_agent_id: action.actorAgentId, root_grant_id: action.rootGrantId }
-            : null,
-        })),
+        // approval.amountMinor/currency are always real numbers (0/"EUR"
+        // for a non-money action, per extractAmount() in submitAction.ts)
+        // since the reservation ledger needs a plain amount to reserve
+        // regardless of action type -- but reporting that 0 here would
+        // falsely read as "this costs nothing" rather than "not
+        // applicable", so it's nulled out for display when the underlying
+        // action isn't money-shaped at all.
+        approvals: rows.map(({ approval, action }) => {
+          const money = action ? isMoneyAction(action.action as ActionName) : true;
+          return {
+            approval_id: approval.id,
+            action_id: approval.actionId,
+            principal_id: approval.principalId,
+            grant_chain_ids: approval.grantChainIds,
+            amount_minor: money ? approval.amountMinor : null,
+            currency: money ? approval.currency : null,
+            triggering_rule: approval.triggeringRule,
+            status: approval.status,
+            expires_at: approval.expiresAt,
+            created_at: approval.createdAt,
+            reviewer_user_id: approval.reviewerUserId,
+            decided_at: approval.decidedAt,
+            action: action
+              ? { resource_id: action.resourceId, action: action.action, actor_agent_id: action.actorAgentId, root_grant_id: action.rootGrantId }
+              : null,
+          };
+        }),
       };
     })
   );

@@ -7,7 +7,7 @@ import { actions, receipts, approvals } from "@trustrail/db";
 import { agentRoute, userRoute, handleRouteError } from "../http/handlers.js";
 import { authenticateAgent, authenticateUserWithOrg } from "../auth/context.js";
 import { ApiError, sendApiError } from "../http/errors.js";
-import { createActionRequestSchema, EXECUTION_STATES, DECISIONS } from "@trustrail/contracts";
+import { createActionRequestSchema, EXECUTION_STATES, DECISIONS, isMoneyAction, type ActionName } from "@trustrail/contracts";
 import { submitAction, type SubmitActionDeps } from "../gateway/submitAction.js";
 import { resolveConnector } from "@trustrail/gateway-core";
 
@@ -140,6 +140,13 @@ export function registerActionRoutes(app: FastifyInstance, db: Db, deps: SubmitA
 }
 
 function serializeActionSummary(a: typeof actions.$inferSelect) {
+  // Only refund.create/subscription.grant_credit arguments actually carry
+  // amount_minor/currency -- the other action types (change_plan,
+  // activate_feature, invite_user) have no notion of an amount at all, so
+  // reporting one here (even 0) would falsely imply "this cost nothing"
+  // rather than "not applicable".
+  const money = isMoneyAction(a.action as ActionName);
+  const args = a.arguments as { amount_minor?: number; currency?: string };
   return {
     action_id: a.id,
     action: a.action,
@@ -149,8 +156,8 @@ function serializeActionSummary(a: typeof actions.$inferSelect) {
     decision: a.decision,
     execution_state: a.executionState,
     reason_codes: a.reasonCodes,
-    amount_minor: (a.arguments as { amount_minor: number }).amount_minor,
-    currency: (a.arguments as { currency: string }).currency,
+    amount_minor: money ? (args.amount_minor ?? null) : null,
+    currency: money ? (args.currency ?? null) : null,
     created_at: a.createdAt,
     updated_at: a.updatedAt,
   };

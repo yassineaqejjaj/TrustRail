@@ -125,8 +125,9 @@ export interface ActionSummary {
   decision: Decision;
   execution_state: ExecutionState;
   reason_codes: ReasonCode[];
-  amount_minor: number;
-  currency: Currency;
+  // null for non-money action types (subscription.change_plan/activate_feature/invite_user) -- not "zero cost", just not applicable.
+  amount_minor: number | null;
+  currency: Currency | null;
   created_at: string;
   updated_at: string;
 }
@@ -169,8 +170,9 @@ export interface ApprovalListItem {
   action_id: string;
   principal_id: string;
   grant_chain_ids: string[];
-  amount_minor: number;
-  currency: Currency;
+  // null for a non-money action's approval -- not "zero cost".
+  amount_minor: number | null;
+  currency: Currency | null;
   triggering_rule: string;
   status: ApprovalStatus;
   expires_at: string;

@@ -1,6 +1,7 @@
 import type { ApprovalStatus, Decision, ExecutionState } from "@trustrail/contracts";
 
-export function formatMoney(minor: number, currency: string = "EUR"): string {
+export function formatMoney(minor: number | null | undefined, currency: string | null | undefined = "EUR"): string {
+  if (minor == null || currency == null) return "—";
   const major = minor / 100;
   return new Intl.NumberFormat("en-IE", { style: "currency", currency }).format(major);
 }
