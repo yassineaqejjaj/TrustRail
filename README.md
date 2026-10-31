@@ -108,3 +108,9 @@ Actions runner against [`yassineaqejjaj/trustrail`](https://github.com/yassineaq
 — see `docs/BUILD_STATUS.md`'s V15 entry and `docs/DECISIONS.md` for the
 real bugs both of those first runs found and fixed. Production deployment
 guidance is in `docs/OPERATIONS.md`.
+
+---
+
+## Part of an engineering approach
+
+Built with the [Agentic SDLC framework](https://github.com/yassineaqejjaj/agentic-sdlc) (earned autonomy). Read how this project was built and what its checks caught in the [case study](https://github.com/yassineaqejjaj/agentic-sdlc/blob/main/docs/case-studies/trustrail.md).
