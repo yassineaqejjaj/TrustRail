@@ -2,6 +2,20 @@
 
 **Let agents act. Keep control.**
 
+[![CI](https://github.com/yassineaqejjaj/TrustRail/actions/workflows/ci.yml/badge.svg)](https://github.com/yassineaqejjaj/TrustRail/actions/workflows/ci.yml)
+
+## At a glance
+
+| | |
+|---|---|
+| **What it is** | A control layer that decides what AI agents may do on behalf of people and companies, and records signed, verifiable receipts of every decision. |
+| **Problem** | Companies want agents to take real actions but have no enforceable way to bound them, require human review, or prove afterwards what happened. |
+| **Status** | **Prototype** (V1, synthetic sandboxes only, no real money moves). See [Current status](#current-status). |
+| **Architecture** | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| **Demo** | [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) (90-second scripted demo) |
+| **Product brief** | [`docs/YC_PRODUCT_BRIEF.md`](docs/YC_PRODUCT_BRIEF.md) |
+| **Case study** | [How this project was built](https://github.com/yassineaqejjaj/agentic-sdlc/blob/main/docs/case-studies/trustrail.md) |
+
 TrustRail controls what AI agents can do on behalf of people and companies,
 then records verifiable receipts of those actions. For every protected
 operation it answers: which agent requested it, who authorized that agent,
@@ -17,6 +31,38 @@ against a synthetic SaaS sandbox. **No real money moves.**
 Read [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) for exactly what is
 implemented, tested, and known-limited as of the latest session — this
 README is the quickstart, that file is the honest status board.
+
+## The problem
+
+Companies want AI agents to take real actions (starting with financial operations such as refunds) but have no enforceable way to bound what an agent can do, require human review above a threshold, or produce evidence after the fact. Prompt-level guardrails are advisory only. Details: [`docs/YC_PRODUCT_BRIEF.md`](docs/YC_PRODUCT_BRIEF.md).
+
+## The solution
+
+An enforcement gateway sits between the agent and the downstream system and owns the downstream credential, so the agent cannot bypass it. Every protected request is evaluated against a delegated grant and a versioned, deterministic policy (no LLM judgment in the authorization path), then allowed, denied, or held for human approval, and finally recorded in signed receipts.
+
+## Key features
+
+- Agent registry with revocable credentials.
+- Human-to-agent and agent-to-agent delegation with strict subset (attenuation) rules.
+- Versioned, deterministic policies.
+- Human approval queue bound to the exact request, policy and grant chain.
+- Transactional shared budgets and idempotency.
+- Signed decision and execution receipts (Ed25519 JWS), independently verifiable.
+- Web dashboard, deterministic demo lab (12 scenarios), TypeScript and Python SDKs, and an MCP adapter.
+
+Requirement-by-requirement status: [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md).
+
+## Architecture
+
+Agents call the `apps/api` gateway, which resolves the grant chain and policy, evaluates the request, reserves budget atomically, dispatches to the synthetic sandbox and issues signed receipts. The dashboard and SDKs use the same API routes as agents. See the trusted execution path and package boundaries in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), and the threat model in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
+
+## Tech stack
+
+TypeScript monorepo (pnpm workspaces): Next.js and Tailwind dashboard, Fastify API, PostgreSQL (embedded Postgres for local dev), zod schemas, Ed25519 JWS receipts, a Python SDK, an MCP stdio adapter, Docker Compose, vitest and Playwright. Versions and rationale: [`docs/DECISIONS.md`](docs/DECISIONS.md).
+
+## Screenshots / Demo
+
+No screenshots yet. The scripted demo is in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md); `pnpm demo:run <scenario>` runs scenarios end to end (see Quickstart below).
 
 ## Repository layout
 
@@ -108,6 +154,26 @@ Actions runner against [`yassineaqejjaj/trustrail`](https://github.com/yassineaq
 — see `docs/BUILD_STATUS.md`'s V15 entry and `docs/DECISIONS.md` for the
 real bugs both of those first runs found and fixed. Production deployment
 guidance is in `docs/OPERATIONS.md`.
+
+## Testing & quality
+
+CI runs on every push to `main` and on pull requests (`.github/workflows/ci.yml`, badge above). `pnpm verify` runs lint, typecheck, tests and production build. Actual commands and results: [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md).
+
+## Current status
+
+**Prototype.** V1 runs against synthetic merchant and SaaS sandboxes only; no real money moves. The requirement checklist and phase gates are in [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md). Per that file, a recorded demo take with a live presenter is not done.
+
+## Known limitations
+
+See "Known simplifications" in [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) and the coverage gaps in [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md). Out-of-scope items for V1 are listed in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+## Roadmap
+
+[`docs/ROADMAP.md`](docs/ROADMAP.md): what is out of scope for V1, the expansion hypothesis, and engineering follow-ups.
+
+## License
+
+No licence file yet. `package.json` declares `UNLICENSED`.
 
 ---
 
