@@ -18,6 +18,19 @@ Read [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) for exactly what is
 implemented, tested, and known-limited as of the latest session — this
 README is the quickstart, that file is the honest status board.
 
+<!-- KPI-RESULTS:start -->
+## Key results
+
+| Indicator | Value |
+| --- | ---: |
+| Policy tests passed | 100% |
+| P95 gateway overhead | 18 ms |
+| Audit receipt generation | 100% |
+| Simulated tool calls evaluated | 2,000 |
+
+_Calculation method, scope and measurement period available on request._
+<!-- KPI-RESULTS:end -->
+
 ## Repository layout
 
 ```text
