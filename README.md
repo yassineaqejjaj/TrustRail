@@ -1,5 +1,7 @@
 # TrustRail
 
+![IASEEN Constellation — TrustRail](docs/assets/github-cover.svg)
+
 **Let agents act. Keep control.**
 
 TrustRail controls what AI agents can do on behalf of people and companies,
