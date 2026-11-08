@@ -2,30 +2,22 @@
 
 ## The trusted execution path
 
-```
-authenticated agent (bearer credential)
-        |
-        v
-   apps/api gateway  --(read-only order lookup)-->  apps/merchant-sandbox
-        |
-        | resolve grant chain + policy, evaluate (packages/policy-engine)
-        v
-   ALLOW / DENY / REQUIRE_APPROVAL
-        |
-   [if REQUIRE_APPROVAL: apps/api approvals -> human decision -> re-evaluate]
-        |
-        v
-   atomic budget reservation (Postgres row locks, same tx as the dispatch claim)
-        |
-        v
-   execution_jobs outbox row written in the SAME transaction
-        |
-        v
-   dispatch: apps/api calls apps/merchant-sandbox's write API
-   (idempotency key = TrustRail action ID)
-        |
-        v
-   signed decision + execution receipts (packages/receipt-verifier, Ed25519 JWS)
+```mermaid
+flowchart TD
+    agent["Authenticated agent · bearer credential"] --> gateway["apps/api gateway"]
+    gateway -->|"Read-only order lookup"| merchant["apps/merchant-sandbox"]
+    gateway --> policy["Resolve grant chain and policy · packages/policy-engine"]
+    policy --> decision{"ALLOW / DENY / REQUIRE_APPROVAL"}
+    decision -->|"REQUIRE_APPROVAL"| approvals["apps/api approvals"]
+    approvals --> human["Human decision"] -->|"Re-evaluate"| policy
+    decision -->|"DENY"| receipts["Signed decision and execution receipts · Ed25519 JWS"]
+    decision -->|"ALLOW"| budget
+    subgraph transaction["Same PostgreSQL transaction · row locks and dispatch claim"]
+        budget["Atomic budget reservation"] --> outbox["Write execution_jobs outbox row"]
+    end
+    outbox --> dispatch["Dispatch · apps/api calls merchant write API"]
+    dispatch -->|"Idempotency key = TrustRail action ID"| merchant
+    dispatch --> receipts
 ```
 
 The dashboard (`apps/web`) and both SDKs call the exact same `apps/api`
@@ -115,3 +107,4 @@ the spec is the contract, the schema file is what was actually built to
 satisfy it). The merchant sandbox's tables live in their own PostgreSQL
 schema (`merchant_sandbox`), in a separate database entirely in every test
 harness and in local dev (`trustrail` vs `trustrail_merchant`).
+
